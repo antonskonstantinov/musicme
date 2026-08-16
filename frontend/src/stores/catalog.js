@@ -77,10 +77,7 @@ export const useCatalogStore = defineStore("catalog", () => {
         return;
       }
 
-      const firstAlbum = albums.value.reduce((min, album) =>
-        album.id < min.id ? album : min,
-      );
-      await fetchAlbumDetail(firstAlbum.id);
+      await fetchAlbumDetail(albums.value[0].id);
 
       const tracks = currentAlbum.value?.tracks ?? [];
       if (tracks.length) {
