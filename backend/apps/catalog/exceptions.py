@@ -1,6 +1,21 @@
 from rest_framework.views import exception_handler as drf_exception_handler
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework import status
+
+
+class ContractValidationError(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_code = "validation_error"
+    default_detail = "Некорректные данные"
+
+    def __init__(self, message, details=None):
+        self.api_message = message
+        super().__init__(detail=details or {})
+
+
+def raise_api_validation_error(message, details):
+    raise ContractValidationError(message, details)
 
 
 def _stringify_details(detail):
@@ -41,13 +56,16 @@ def api_exception_handler(exc, context):
             message = str(data[0])
     elif status_code == status.HTTP_400_BAD_REQUEST:
         code = "validation_error"
+        message = getattr(exc, "api_message", None) or "Некорректные данные"
         if isinstance(data, dict):
             if list(data.keys()) == ["detail"]:
-                message = str(data["detail"])
+                if not getattr(exc, "api_message", None):
+                    message = str(data["detail"])
             else:
                 details = _stringify_details(data)
         elif isinstance(data, list) and data:
-            message = str(data[0])
+            if not getattr(exc, "api_message", None):
+                message = str(data[0])
     elif status_code == status.HTTP_401_UNAUTHORIZED:
         code = "authentication_required"
         message = "Требуется аутентификация"
