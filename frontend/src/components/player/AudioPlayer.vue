@@ -111,10 +111,11 @@ watch(audio, () => {
 </script>
 
 <template>
-  <div
-    v-if="player.currentTrack"
-    class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-800 bg-gray-900 px-4 py-3"
-  >
+  <Transition name="slide-up">
+    <div
+      v-if="player.currentTrack"
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-800 bg-gray-900 px-4 py-3"
+    >
     <audio
       ref="audio"
       preload="metadata"
@@ -185,5 +186,6 @@ watch(audio, () => {
         Закрыть
       </button>
     </div>
-  </div>
+    </div>
+  </Transition>
 </template>

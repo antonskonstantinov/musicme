@@ -47,7 +47,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="border-b border-gray-800 py-4">
+  <section class="fade-in border-b border-gray-800 py-4">
     <div class="mb-3 flex items-center gap-2 px-4">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-400">
         {{ title }}
@@ -66,7 +66,7 @@ onBeforeUnmount(() => {
       <div
         v-for="index in 6"
         :key="index"
-        class="h-20 min-w-[8rem] shrink-0 animate-pulse rounded-xl bg-gray-800"
+        class="h-24 min-w-[8.5rem] shrink-0 animate-pulse rounded-2xl bg-gray-800"
       />
     </div>
 
@@ -80,16 +80,16 @@ onBeforeUnmount(() => {
     <div
       v-else
       ref="scroller"
-      class="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4"
+      class="carousel-track flex touch-pan-x gap-3 overflow-x-auto px-4"
     >
       <button
         v-for="item in items"
         :key="item.id"
         type="button"
-        class="snap-start shrink-0 rounded-xl border px-4 py-3 text-left transition"
+        class="snap-start shrink-0 rounded-2xl border px-4 py-3 text-left shadow-md transition duration-200 hover:-translate-y-0.5 hover:shadow-xl"
         :class="
           item.id === selectedId
-            ? 'border-white bg-gray-700 text-white ring-2 ring-white'
+            ? 'border-white bg-gray-700 text-white shadow-lg ring-2 ring-white'
             : 'border-gray-700 bg-gray-800 text-gray-200 hover:border-gray-500'
         "
         @click="$emit('select', item)"

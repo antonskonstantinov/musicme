@@ -7,7 +7,7 @@ defineEmits(["close"]);
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
     @click.self="$emit('close')"
   >
-    <div class="w-full max-w-sm rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-xl">
+    <div class="w-full max-w-sm rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
       <p class="text-center text-lg text-white">
         <slot />
       </p>

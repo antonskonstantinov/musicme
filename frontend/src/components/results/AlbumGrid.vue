@@ -94,34 +94,42 @@ watch(
 
 <template>
   <section aria-label="Результаты" class="flex-1 px-4 py-6 pb-32">
-    <SearchResults v-if="viewMode === 'search'" />
+    <Transition name="fade-mode" mode="out-in">
+      <SearchResults v-if="viewMode === 'search'" key="search" />
 
-    <p v-else-if="viewMode === 'empty-db'" class="text-gray-400">
-      Контент скоро появится
-    </p>
+      <p v-else-if="viewMode === 'empty-db'" key="empty-db" class="text-gray-400">
+        Контент скоро появится
+      </p>
 
-    <p v-else-if="viewMode === 'empty-filters'" class="text-gray-400">
-      Ничего не найдено. Измените параметры.
-    </p>
+      <p v-else-if="viewMode === 'empty-filters'" key="empty-filters" class="text-gray-400">
+        Ничего не найдено. Измените параметры.
+      </p>
 
-    <Spinner v-else-if="viewMode === 'tracks' && !trackAlbum" label="Загрузка" />
-
-    <TrackList
-      v-else-if="viewMode === 'tracks' && trackAlbum"
-      :album="trackAlbum"
-      :show-back="Boolean(filters.selectedAlbum)"
-      @back="onBack"
-    />
-
-    <div
-      v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
-    >
-      <AlbumCard
-        v-for="album in catalog.albums"
-        :key="album.id"
-        :album="album"
+      <Spinner
+        v-else-if="viewMode === 'tracks' && !trackAlbum"
+        key="tracks-loading"
+        label="Загрузка"
       />
-    </div>
+
+      <TrackList
+        v-else-if="viewMode === 'tracks' && trackAlbum"
+        :key="`tracks-${trackAlbum.id}`"
+        :album="trackAlbum"
+        :show-back="Boolean(filters.selectedAlbum)"
+        @back="onBack"
+      />
+
+      <div
+        v-else-if="viewMode === 'grid'"
+        key="grid"
+        class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+      >
+        <AlbumCard
+          v-for="album in catalog.albums"
+          :key="album.id"
+          :album="album"
+        />
+      </div>
+    </Transition>
   </section>
 </template>

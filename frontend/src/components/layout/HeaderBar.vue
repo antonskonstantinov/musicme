@@ -61,13 +61,13 @@ onBeforeUnmount(() => {
 
 <template>
   <header
-    class="flex items-center gap-4 border-b border-gray-800 bg-gray-900 px-4 py-3"
+    class="flex flex-wrap items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-3"
   >
     <div class="shrink-0 text-2xl font-bold tracking-tight text-white">
       Muzzzic
     </div>
 
-    <div class="relative mx-auto w-full max-w-xl">
+    <div class="relative order-3 w-full flex-1 md:order-none md:max-w-xl">
       <input
         type="search"
         :value="searchInput"
@@ -81,10 +81,10 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div class="flex shrink-0 items-center gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-2">
       <button
         type="button"
-        class="flex items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-800"
+        class="flex items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-sm font-medium text-gray-800 shadow-sm hover:shadow"
         @click="openOauthModal"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -105,12 +105,12 @@ onBeforeUnmount(() => {
             d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.43-3.43C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.59l4 3.09C6.22 6.86 8.87 4.75 12 4.75z"
           />
         </svg>
-        Google
+        <span class="hidden sm:inline">Google</span>
       </button>
 
       <button
         type="button"
-        class="flex items-center gap-2 rounded-md bg-[#FFCC00] px-3 py-1.5 text-sm font-medium text-black"
+        class="flex items-center gap-2 rounded-md bg-[#FFCC00] px-2.5 py-1.5 text-sm font-medium text-black shadow-sm hover:shadow"
         @click="openOauthModal"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -119,26 +119,30 @@ onBeforeUnmount(() => {
             d="M12.6 2h-2.4c-3.5 0-5.7 1.8-5.7 4.7 0 2.4 1.1 3.8 3.3 5.1l.7.4-4.2 6.3h2.8l4.1-6.2h.2V18h2.4V2h-1.2zm-2.3 8.4c-1.7-.9-2.5-1.9-2.5-3.5 0-1.8 1.2-2.8 3.3-2.8h.4v6.6l-1.2-.3z"
           />
         </svg>
-        Яндекс
+        <span class="hidden sm:inline">Яндекс</span>
       </button>
 
       <button
         type="button"
-        class="flex items-center gap-2 rounded-md bg-[#0077FF] px-3 py-1.5 text-sm font-medium text-white"
+        class="flex items-center gap-2 rounded-md bg-[#0077FF] px-2.5 py-1.5 text-sm font-medium text-white shadow-sm hover:shadow"
         @click="openOauthModal"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path
-            fill="currentColor"
+            fill="#ffffff"
             d="M12.8 17.5c-5.4 0-8.5-3.7-8.6-9.9h2.7c.1 4.6 2.1 6.5 3.7 6.9V7.6h2.5v3.9c1.6-.2 3.2-2 3.8-3.9h2.5c-.4 2.5-2.2 4.3-3.5 5.1 1.3.7 3.3 2.3 4 5.7h-2.8c-.6-2-2.1-3.5-4-3.7v3.7h-.3z"
           />
         </svg>
-        VK
+        <span class="hidden sm:inline">VK</span>
       </button>
     </div>
   </header>
 
-  <Modal v-if="isOauthModalOpen" @close="closeOauthModal">
-    Раздел в разработке
-  </Modal>
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <Modal v-if="isOauthModalOpen" @close="closeOauthModal">
+        Раздел в разработке
+      </Modal>
+    </Transition>
+  </Teleport>
 </template>
