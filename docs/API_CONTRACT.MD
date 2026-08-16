@@ -1,4 +1,4 @@
-# API CONTRACT — Muzzzic
+# API CONTRACT — MusicMe
 
 ## 1. Общие положения
 

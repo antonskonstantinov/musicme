@@ -1,4 +1,4 @@
-# DATA MODEL — Muzzzic
+# DATA MODEL — MusicMe
 
 1. Общие принципы
 - **PK:** Все первичные ключи — `id` (BigAutoField)

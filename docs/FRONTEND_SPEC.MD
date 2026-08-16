@@ -1,4 +1,4 @@
-# FRONTEND SPECIFICATION — Muzzzic
+# FRONTEND SPECIFICATION — MusicMe
 
 ## 1. Общая концепция
 
@@ -89,7 +89,7 @@ text
 **Описание:** Верхняя панель.
 
 **Элементы:**
-- Логотип "Muzzzic" (слева)
+- Логотип "MusicMe" (слева)
 - Строка поиска (по центру)
 - Кнопки OAuth (справа): Google, Яндекс, VK
 

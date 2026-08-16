@@ -61,10 +61,14 @@ onBeforeUnmount(() => {
 
 <template>
   <header
-    class="flex flex-wrap items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-3"
+    class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800 bg-gray-900 px-4 py-3"
   >
-    <div class="shrink-0 text-2xl font-bold tracking-tight text-white">
-      Muzzzic
+    <div class="min-w-0 w-full sm:w-auto sm:max-w-[14rem] md:max-w-xs">
+      <div class="text-2xl font-bold tracking-tight text-white">MusicMe</div>
+      <p class="mt-0.5 text-xs leading-snug text-gray-400">
+        Личная библиотека музыкальных произведений. Проект Антона Константинова,
+        созданный в демонстрационных целях
+      </p>
     </div>
 
     <div class="relative order-3 w-full flex-1 md:order-none md:max-w-xl">

@@ -1,4 +1,4 @@
-# DEVELOPMENT PLAN — Muzzzic
+# DEVELOPMENT PLAN — MusicMe
 
 ## 1. Общие принципы
 

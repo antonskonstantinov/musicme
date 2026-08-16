@@ -1,4 +1,4 @@
-# PROJECT VISION — Muzzzic
+# PROJECT VISION — MusicMe
 
 ## 1. Миссия проекта
 Одностраничный веб-каталог музыкальных треков, который:

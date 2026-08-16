@@ -24,7 +24,7 @@ def api_root(request):
     return JsonResponse(
         {
             "data": {
-                "name": "Muzzzic API",
+                "name": "MusicMe API",
                 "version": "v1",
                 "status": "ok",
             }
