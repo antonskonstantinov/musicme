@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "rest_framework",
     "apps.catalog",
 ]
 
@@ -88,6 +89,18 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "apps.catalog.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "apps.catalog.exceptions.api_exception_handler",
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+}
 
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
