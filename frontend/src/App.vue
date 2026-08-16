@@ -6,6 +6,8 @@ import ArtistFilter from "./components/filters/ArtistFilter.vue";
 import GenreFilter from "./components/filters/GenreFilter.vue";
 import MoodFilter from "./components/filters/MoodFilter.vue";
 import HeaderBar from "./components/layout/HeaderBar.vue";
+import AudioPlayer from "./components/player/AudioPlayer.vue";
+import AlbumGrid from "./components/results/AlbumGrid.vue";
 import FilterChips from "./components/ui/FilterChips.vue";
 import Spinner from "./components/ui/Spinner.vue";
 import { useCatalogStore } from "./stores/catalog.js";
@@ -34,7 +36,9 @@ onMounted(() => {
       <ArtistFilter />
       <AlbumFilter />
       <FilterChips />
-      <section aria-label="Результаты" />
+      <AlbumGrid />
     </main>
+
+    <AudioPlayer />
   </div>
 </template>

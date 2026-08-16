@@ -45,6 +45,7 @@ export const usePlayerStore = defineStore("player", () => {
 
   function next() {
     if (currentIndex.value < 0 || currentIndex.value >= queue.value.length - 1) {
+      isPlaying.value = false;
       return;
     }
     currentIndex.value += 1;
