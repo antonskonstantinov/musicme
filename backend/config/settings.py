@@ -1,18 +1,31 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "dev-insecure-key-change-in-production",
-)
+DEBUG = os.environ.get("DJANGO_DEBUG", os.environ.get("DEBUG", "0")) == "1"
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+SECRET_KEY = (
+    os.environ.get("DJANGO_SECRET_KEY")
+    or os.environ.get("SECRET_KEY")
+    or ""
+)
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "dev-insecure-key-change-in-production"
+    else:
+        raise ImproperlyConfigured(
+            "Задайте DJANGO_SECRET_KEY или SECRET_KEY в окружении (DEBUG=0)."
+        )
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1"),
+    ).split(",")
     if host.strip()
 ]
 
@@ -82,8 +95,14 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "0") == "1"
+SESSION_COOKIE_SECURE = SECURE_SSL_REDIRECT
+CSRF_COOKIE_SECURE = SECURE_SSL_REDIRECT
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

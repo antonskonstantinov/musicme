@@ -2,12 +2,10 @@
 
 Одностраничный веб-каталог музыкальных треков с фасетными фильтрами, поиском и аудиоплеером.
 
-Это **локальное демо / MVP**. `docker compose` поднимает Django `runserver` и Vite dev-сервер — для продакшена этого недостаточно (нет gunicorn/nginx, `DEBUG` включён, секретный ключ учебный).
-
 ## Стек
 
-- **Backend:** Python 3.12, Django 5, Django REST Framework, PostgreSQL 16
-- **Frontend:** Vue 3, Vite, Pinia, Axios, Tailwind CSS
+- **Backend:** Python 3.12, Django 5, Gunicorn, PostgreSQL 16
+- **Frontend:** Vue 3, Vite, Pinia, Axios, Tailwind CSS, Nginx
 - **Инфраструктура:** Docker Compose
 
 ## Что умеет
@@ -18,19 +16,13 @@
 - Django Admin и админские API для контента
 - OAuth-кнопки — заглушка («Раздел в разработке»)
 
-## Требования
-
-- Docker и Docker Compose
-
-## Запуск
+## Локальная разработка
 
 ```bash
 docker compose up --build
 ```
 
-Миграции применяются автоматически при старте backend (`entrypoint.sh`).
-
-После запуска:
+Миграции применяются автоматически при старте backend.
 
 | Сервис   | URL                           |
 |----------|-------------------------------|
@@ -39,37 +31,32 @@ docker compose up --build
 | Admin    | http://localhost:8001/admin/  |
 | Postgres | localhost:5433                |
 
-Учётные данные Postgres (только для локальной разработки): пользователь / пароль / БД — `muzzzic`.
+Postgres (только dev): пользователь / пароль / БД — `muzzzic`.
 
-### После первого запуска каталог пустой
-
-Без данных в админке главная покажет «Контент скоро появится».
-
-1. Создайте суперпользователя:
+После первого запуска каталог пустой. Создайте суперпользователя и добавьте контент:
 
 ```bash
 docker compose exec backend python manage.py createsuperuser
 ```
 
-2. Войдите в http://localhost:8001/admin/
-3. Добавьте жанры, настроения, исполнителей, альбомы и песни.
-4. Для песен загрузите **настоящие** аудиофайлы (mp3/wav/flac/ogg). Заглушки браузер не воспроизведёт.
+Админка: http://localhost:8001/admin/  
+Для плеера загружайте настоящие аудиофайлы (mp3/wav/flac/ogg).
 
-### Остановка
+Остановка:
 
 ```bash
 docker compose down
 ```
 
-Удалить данные PostgreSQL и загруженные медиа:
+С удалением данных БД и медиа:
 
 ```bash
 docker compose down -v
 ```
 
-## Локальный запуск фронтенда (без контейнера frontend)
+### Фронтенд на хосте
 
-Backend должен быть доступен на http://localhost:8001 (контейнер `backend`). Порт **5173** не должен быть занят контейнером `frontend`.
+Backend должен слушать http://localhost:8001, порт 5173 свободен:
 
 ```bash
 cd frontend
@@ -77,16 +64,86 @@ npm install
 npm run dev
 ```
 
-Vite проксирует `/api` и `/media` на `http://127.0.0.1:8001`.
+## Production (VPS)
+
+Нужны Docker, Docker Compose и домен (или IP), направленный на сервер.
+
+1. Скопируйте проект на VPS и создайте `.env` из примера:
+
+```bash
+cp .env.example .env
+```
+
+2. Заполните `.env`:
+
+```bash
+# секрет Django
+python3 -c "import secrets; print(secrets.token_urlsafe(50))"
+
+DEBUG=0
+SECRET_KEY=<сгенерированная строка>
+ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+POSTGRES_PASSWORD=<надёжный пароль>
+CORS_ALLOWED_ORIGINS=https://your-domain.com
+CSRF_TRUSTED_ORIGINS=https://your-domain.com
+```
+
+Для проверки на сервере по IP (без домена) укажите IP в `ALLOWED_HOSTS` и `http://YOUR_IP` в `CSRF_TRUSTED_ORIGINS`.
+
+3. Запустите production-стек (не смешивайте с `docker compose up` — у prod отдельное имя проекта `muzzzic-prod`):
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Эквивалентно: `docker-compose -f docker-compose.prod.yml up -d --build`.
+
+Сайт: http://YOUR_DOMAIN/ (порт 80)  
+Админка: http://YOUR_DOMAIN/admin/  
+API: http://YOUR_DOMAIN/api/v1/
+
+4. Создайте суперпользователя:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+```
+
+5. HTTPS (позже, certbot): в `frontend/nginx.conf` есть заглушка редиректа HTTP → HTTPS и location для `/.well-known/acme-challenge/`. После выпуска сертификата раскомментируйте блок 443 и редирект, затем:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build frontend
+```
+
+В `.env` можно включить `DJANGO_SECURE_SSL_REDIRECT=1`.
+
+### Бэкапы
+
+```bash
+./scripts/backup.sh
+```
+
+Дамп PostgreSQL и копия `/app/media` сохраняются в `./backups/`.
+
+### Остановка production
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
 
 ## Структура проекта
 
 ```
 muzzzic/
-├── docker-compose.yml
-├── backend/          # Django API
-├── frontend/         # Vue SPA
-└── docs/             # Спецификации
+├── docker-compose.yml           # разработка
+├── docker-compose.prod.yml      # VPS / production
+├── .env.example
+├── backend/
+├── frontend/
+│   ├── Dockerfile               # Vite dev
+│   ├── Dockerfile.prod          # nginx + dist
+│   └── nginx.conf
+├── scripts/backup.sh
+└── docs/
 ```
 
 ## Документация
@@ -99,12 +156,13 @@ muzzzic/
 
 ## Разработка
 
-Код монтируется в контейнеры через volumes — изменения применяются без пересборки (hot reload). Если на фронтенде добавили npm-зависимость, пересоберите сервис: `docker compose up --build frontend`.
+Код в dev-compose монтируется через volumes (hot reload). Новая npm-зависимость: `docker compose up --build frontend`.
 
 ### Устранение проблем
 
-Если `docker compose up` падает с ошибкой `address already in use`:
+`address already in use`:
 
-- **5173** — занят другой Vite / контейнер frontend
-- **8001** — занят другой backend
-- **5432** — локальный Postgres; в compose БД проброшена на **5433**
+- **5173** — занят Vite / контейнер frontend (dev)
+- **80** — занят другой nginx / production frontend
+- **8001** — занят backend (dev)
+- **5432** — локальный Postgres; в dev compose БД на **5433**
