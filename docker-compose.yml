@@ -33,7 +33,8 @@ services:
       POSTGRES_PORT: "5432"
       DJANGO_DEBUG: "1"
       DJANGO_ALLOWED_HOSTS: "*"
-      CORS_ALLOWED_ORIGINS: "http://localhost:5173"
+      CORS_ALLOWED_ORIGINS: "http://localhost:5174,http://127.0.0.1:5174"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:5174,http://127.0.0.1:5174"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,12 +43,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: npm run dev -- --host 0.0.0.0
+    command: npm run dev -- --host 0.0.0.0 --port 5174
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "5174:5174"
     environment:
       API_PROXY_TARGET: http://backend:8000
     depends_on:

@@ -78,7 +78,7 @@ postgres: PostgreSQL 16
 
 Инициализируй Vue-проект в папке frontend/ с Vite + Pinia + Tailwind
 
-Настрой CORS (django-cors-headers) для localhost:5173
+Настрой CORS (django-cors-headers) для localhost:5174
 
 Настрой Vite proxy: /api -> http://backend:8000, /media -> http://backend:8000
 
@@ -89,7 +89,7 @@ text
 **Критерий готовности:**
 - [ ] `docker compose up` запускает все три сервиса
 - [ ] Django отвечает на `http://localhost:8000/api/v1/`
-- [ ] Vue отвечает на `http://localhost:5173/`
+- [ ] Vue отвечает на `http://localhost:5174/`
 - [ ] Vue может обратиться к Django API через proxy (без CORS-ошибок)
 
 ---
@@ -114,7 +114,7 @@ Album: title, artist (FK), year (nullable), cover (ImageField), created_at, upda
 
 unique_together(artist, title)
 
-Song: title, audio_file (FileField), duration_seconds, cover (ImageField, nullable), genres (M2M), moods (M2M), created_at, updated_at
+Song: title, audio_file (FileField), duration_seconds (из файла), cover (ImageField, из mp3 или вручную), lyrics (TextField), genres (M2M), moods (M2M), created_at, updated_at
 
 AlbumSong: album (FK), song (FK), track_number, created_at
 

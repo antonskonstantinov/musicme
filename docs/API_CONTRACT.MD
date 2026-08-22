@@ -255,6 +255,7 @@ json
         "id": 100,
         "title": "Капкан",
         "duration_seconds": 210,
+        "lyrics": "Первый куплет\n\nПрипев",
         "audio_url": "/media/audio/song_100.mp3",
         "album_id": 10,
         "album_title": "Лучшие хиты",
@@ -312,6 +313,7 @@ json
         "title": "Капкан",
         "track_number": 1,
         "duration_seconds": 210,
+        "lyrics": "Первый куплет\n\nПрипев",
         "audio_url": "/media/audio/song_100.mp3",
         "cover_url": "/media/covers/song_100.jpg",
         "genres": [
@@ -326,6 +328,7 @@ json
         "title": "Соло",
         "track_number": 2,
         "duration_seconds": 185,
+        "lyrics": "",
         "audio_url": "/media/audio/song_101.mp3",
         "cover_url": null,
         "genres": [
@@ -345,6 +348,8 @@ json
 Треки отсортированы по track_number (по возрастанию)
 
 Если у песни нет своей обложки — cover_url = null (фронтенд подставит обложку альбома)
+
+lyrics — текст песни (может быть пустой строкой)
 
 audio_url и cover_url — относительные пути (фронтенд добавляет базовый URL)
 
@@ -469,7 +474,7 @@ json
 {
   "title": "Новая Песня",
   "audio_file": "<файл аудио>",
-  "duration_seconds": 215,
+  "lyrics": "Текст песни (опционально)",
   "cover": "<файл изображения (опционально)>",
   "genre_ids": [1, 2],
   "mood_ids": [2, 3],
@@ -485,6 +490,7 @@ json
     "id": 102,
     "title": "Новая Песня",
     "duration_seconds": 215,
+    "lyrics": "Текст песни (опционально)",
     "audio_url": "/media/audio/song_102.mp3",
     "cover_url": null,
     "genres": [
@@ -508,9 +514,11 @@ title — обязательное (1-200 символов)
 
 audio_file — обязательное (mp3, wav, flac, ogg; макс. 20 MB)
 
-duration_seconds — обязательное (>= 0)
+duration_seconds — не передавать при создании: берётся из аудиофайла. Обязательно (>= 0) только если длительность из файла прочитать не удалось
 
-cover — опциональное (jpg, png, webp; макс. 5 MB)
+lyrics — опциональное (текст песни, до 50 000 символов)
+
+cover — опциональное (jpg, png, webp; макс. 5 MB). Если не передано, а в mp3 есть встроенная картинка (ID3 APIC) — обложка берётся из файла
 
 genre_ids — опциональное, массив ID существующих жанров
 
@@ -660,7 +668,7 @@ json
 5. CORS
 Для разработки (localhost):
 
-Access-Control-Allow-Origin: http://localhost:5173 (Vite dev server)
+Access-Control-Allow-Origin: http://localhost:5174 (Vite dev server)
 
 Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 

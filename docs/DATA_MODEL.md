@@ -42,6 +42,7 @@ erDiagram
         varchar(200) title "NOT NULL"
         varchar audio_url "NOT NULL"
         int duration_seconds "NOT NULL DEFAULT 0"
+        text lyrics "NULL / blank"
         varchar cover_url "NULL"
         datetime created_at "auto"
         datetime updated_at "auto"
@@ -154,8 +155,9 @@ updated_at	DateTimeField	auto_now	Дата обновления
 id	BigAutoField	PK	Идентификатор
 title	CharField(200)	NOT NULL	Название песни
 audio_file	FileField	NOT NULL	Аудиофайл (mp3/wav/flac/ogg)
-duration_seconds	IntegerField	NOT NULL, DEFAULT 0	Длительность в секундах
-cover	ImageField	NULL, BLANK	Обложка песни (fallback: обложка альбома)
+duration_seconds	IntegerField	NOT NULL, DEFAULT 0	Длительность в секундах (из файла при загрузке; вручную — только если не удалось определить)
+cover	ImageField	NULL, BLANK	Обложка песни (из ID3 APIC при загрузке mp3, либо файл из админки; fallback на фронте — обложка альбома)
+lyrics	TextField	BLANK, DEFAULT ''	Текст песни (необязательно, показывается на сайте)
 genres	M2M(Genre)	BLANK	Жанры песни
 moods	M2M(Mood)	BLANK	Настроения песни
 created_at	DateTimeField	auto_now_add	Дата создания
@@ -233,6 +235,8 @@ M2M: Song.genres → SongGenre, Song.moods → SongMood
 Файлы: аудио (mp3, wav, flac, ogg) / обложки (jpg, png, webp)	DRF Serializer
 Максимальный размер аудиофайла: 20 MB	DRF Serializer
 year может быть NULL (неизвестен)	DRF Serializer
+Длительность трека берётся из аудиофайла; вручную — только если не определилась	Django Admin / DRF
+Обложка трека может быть извлечена из тегов mp3 (APIC)	Django Admin / DRF
 8. Каскадное удаление (Cascade Behavior)
 Действие	Результат
 Удаление ARTIST	Каскадно удаляются все ALBUM этого артиста
