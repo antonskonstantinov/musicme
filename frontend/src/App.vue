@@ -9,11 +9,14 @@ import HeaderBar from "./components/layout/HeaderBar.vue";
 import AudioPlayer from "./components/player/AudioPlayer.vue";
 import AlbumGrid from "./components/results/AlbumGrid.vue";
 import FilterChips from "./components/ui/FilterChips.vue";
+import LyricsDialog from "./components/ui/LyricsDialog.vue";
 import Spinner from "./components/ui/Spinner.vue";
 import Toast from "./components/ui/Toast.vue";
 import { useCatalogStore } from "./stores/catalog.js";
+import { usePlayerStore } from "./stores/player.js";
 
 const catalog = useCatalogStore();
+const player = usePlayerStore();
 
 onMounted(() => {
   catalog.loadInitialContent();
@@ -42,5 +45,12 @@ onMounted(() => {
 
     <AudioPlayer />
     <Toast />
+    <Teleport to="body">
+      <LyricsDialog
+        v-if="player.lyricsTrack"
+        :track="player.lyricsTrack"
+        @close="player.closeLyrics"
+      />
+    </Teleport>
   </div>
 </template>

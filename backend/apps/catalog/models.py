@@ -44,8 +44,13 @@ class Mood(models.Model):
 class Song(models.Model):
     title = models.CharField(max_length=200, db_index=True)
     audio_file = models.FileField(upload_to="songs/audio/")
-    duration_seconds = models.IntegerField(default=0)
+    duration_seconds = models.IntegerField(
+        "Продолжительность (сек.)",
+        default=0,
+        help_text="Определяется автоматически из аудиофайла.",
+    )
     cover = models.ImageField(upload_to="songs/covers/", null=True, blank=True)
+    lyrics = models.TextField("Текст песни", blank=True, default="")
     genres = models.ManyToManyField(Genre, through="SongGenre", blank=True)
     moods = models.ManyToManyField(Mood, through="SongMood", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

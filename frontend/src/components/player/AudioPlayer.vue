@@ -179,6 +179,15 @@ watch(audio, () => {
       </span>
 
       <button
+        v-if="String(player.currentTrack.lyrics || '').trim()"
+        type="button"
+        class="text-sm text-gray-400 hover:text-white"
+        @click="player.openLyrics(player.currentTrack)"
+      >
+        Текст
+      </button>
+
+      <button
         type="button"
         class="text-sm text-gray-400 hover:text-white"
         @click="player.stop"

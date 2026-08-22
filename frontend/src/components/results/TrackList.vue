@@ -28,8 +28,16 @@ function formatDuration(seconds) {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
+function hasLyrics(track) {
+  return Boolean(String(track?.lyrics || "").trim());
+}
+
 function playTrack(track) {
   player.playTrack(track, props.album.tracks ?? []);
+}
+
+function showLyrics(track) {
+  player.openLyrics(track);
 }
 </script>
 
@@ -94,6 +102,14 @@ function playTrack(track) {
         <span class="shrink-0 text-sm text-gray-400">
           {{ formatDuration(track.duration_seconds) }}
         </span>
+        <button
+          v-if="hasLyrics(track)"
+          type="button"
+          class="shrink-0 rounded-full border border-gray-600 px-3 py-1 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
+          @click.stop="showLyrics(track)"
+        >
+          Текст
+        </button>
         <button
           type="button"
           class="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-200"

@@ -64,6 +64,19 @@ export const usePlayerStore = defineStore("player", () => {
     isPlaying.value = true;
   }
 
+  const lyricsTrack = ref(null);
+
+  function openLyrics(track) {
+    if (!String(track?.lyrics || "").trim()) {
+      return;
+    }
+    lyricsTrack.value = track;
+  }
+
+  function closeLyrics() {
+    lyricsTrack.value = null;
+  }
+
   return {
     currentTrack,
     isPlaying,
@@ -71,11 +84,14 @@ export const usePlayerStore = defineStore("player", () => {
     duration,
     queue,
     currentIndex,
+    lyricsTrack,
     playTrack,
     togglePlay,
     stop,
     seekTo,
     next,
     prev,
+    openLyrics,
+    closeLyrics,
   };
 });

@@ -1,13 +1,17 @@
 import json
+import os
+import tempfile
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
+from mutagen.id3 import APIC, ID3
 from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from .admin import SongAdminForm
 from .models import Album, AlbumSong, Artist, Genre, Mood, Song
 
 
@@ -25,6 +29,39 @@ def make_image(name="cover.png", image_format="PNG"):
 
 def make_audio(name="track.mp3", size=16):
     return SimpleUploadedFile(name, b"0" * size, content_type="audio/mpeg")
+
+
+def make_mp3(name="track.mp3", duration_seconds=2, picture=None):
+    header = bytes((0xFF, 0xFB, 0x90, 0x64))
+    frame_len = 417
+    frame = header + bytes(frame_len - 4)
+    n_frames = max(1, round(duration_seconds * 44100 / 1152))
+    payload = frame * n_frames
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
+            tmp.write(payload)
+            tmp_path = tmp.name
+        if picture is not None:
+            tags = ID3()
+            tags.add(
+                APIC(
+                    encoding=3,
+                    mime="image/png",
+                    type=3,
+                    desc="Cover",
+                    data=picture,
+                )
+            )
+            tags.save(tmp_path)
+        with open(tmp_path, "rb") as handle:
+            content = handle.read()
+    finally:
+        if tmp_path:
+            os.unlink(tmp_path)
+
+    return SimpleUploadedFile(name, content, content_type="audio/mpeg")
 
 
 @override_settings(MEDIA_ROOT="/tmp/muzzzic-test-media")
@@ -190,6 +227,7 @@ class AdminAPITestCase(APITestCase):
                 "title": "Новая Песня",
                 "audio_file": make_audio(),
                 "duration_seconds": 215,
+                "lyrics": "Куплет один\n\nПрипев",
                 "cover": make_image("song.png"),
                 "genre_ids": json.dumps([genre.id]),
                 "mood_ids": json.dumps([mood.id]),
@@ -203,6 +241,7 @@ class AdminAPITestCase(APITestCase):
         data = create.data["data"]
         self.assertEqual(data["title"], "Новая Песня")
         self.assertEqual(data["duration_seconds"], 215)
+        self.assertEqual(data["lyrics"], "Куплет один\n\nПрипев")
         self.assertTrue(data["audio_url"])
         self.assertTrue(data["cover_url"])
         self.assertEqual(data["genres"], [{"id": genre.id, "name": "Hip-Hop"}])
@@ -401,6 +440,110 @@ class AdminAPITestCase(APITestCase):
         self.assertFalse(
             AlbumSong.objects.filter(album=album, song=song).exists()
         )
+
+    def test_song_duration_extracted_from_mp3(self):
+        create = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Автодлина",
+                "audio_file": make_mp3(duration_seconds=2),
+            },
+            format="multipart",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        duration = create.data["data"]["duration_seconds"]
+        self.assertGreaterEqual(duration, 1)
+        self.assertLess(duration, 10)
+
+    def test_song_duration_required_when_undetectable(self):
+        response = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Без длительности",
+                "audio_file": make_audio(),
+            },
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("duration_seconds", response.data["error"]["details"])
+
+    def test_song_cover_extracted_from_mp3_unless_uploaded(self):
+        picture = make_image("embedded.png").read()
+        auto = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "С обложкой из mp3",
+                "audio_file": make_mp3(picture=picture),
+            },
+            format="multipart",
+        )
+        self.assertEqual(auto.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(auto.data["data"]["cover_url"])
+        auto_id = auto.data["data"]["id"]
+
+        override = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Своя обложка",
+                "audio_file": make_mp3(picture=picture),
+                "cover": make_image("manual.png"),
+            },
+            format="multipart",
+        )
+        self.assertEqual(override.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(override.data["data"]["cover_url"])
+        self.assertNotEqual(
+            Song.objects.get(pk=auto_id).cover.name,
+            Song.objects.get(pk=override.data["data"]["id"]).cover.name,
+        )
+
+    def test_song_lyrics_on_public_album(self):
+        artist = Artist.objects.create(name="Мот")
+        album = Album.objects.create(title="Лучшие хиты", artist=artist)
+        create = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Капкан",
+                "audio_file": make_audio(),
+                "duration_seconds": 210,
+                "lyrics": "Первый куплет\nстрока\n\nПрипев",
+                "album_assignments": json.dumps(
+                    [{"album_id": album.id, "track_number": 1}]
+                ),
+            },
+            format="multipart",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+
+        guest = self.client_class()
+        detail = guest.get(f"/api/v1/albums/{album.id}/")
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        track = detail.data["data"]["tracks"][0]
+        self.assertEqual(track["lyrics"], "Первый куплет\nстрока\n\nПрипев")
+
+    def test_song_admin_form_hides_duration_unless_needed(self):
+        valid = SongAdminForm(
+            data={"title": "Форма", "lyrics": "текст", "duration_seconds": 12},
+            files={"audio_file": make_audio()},
+        )
+        self.assertTrue(valid.is_valid(), valid.errors)
+        song = valid.save()
+        self.assertEqual(song.duration_seconds, 12)
+        self.assertEqual(song.lyrics, "текст")
+
+        missing = SongAdminForm(
+            data={"title": "Форма"},
+            files={"audio_file": make_audio()},
+        )
+        self.assertFalse(missing.is_valid())
+        self.assertIn("duration_seconds", missing.errors)
+
+        auto = SongAdminForm(
+            data={"title": "Авто"},
+            files={"audio_file": make_mp3(duration_seconds=2)},
+        )
+        self.assertTrue(auto.is_valid(), auto.errors)
+        self.assertGreaterEqual(auto.cleaned_data["duration_seconds"], 1)
 
     def test_album_not_found_for_tracks(self):
         response = self.client.post(

@@ -1,8 +1,10 @@
 import json
 
+from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from rest_framework import serializers
 
+from .audio_metadata import extract_audio_metadata
 from .exceptions import raise_api_validation_error
 from .models import Album, AlbumSong, Artist, Genre, Mood, Song, SongGenre, SongMood
 from .validators import validate_audio_file, validate_cover_file
@@ -57,6 +59,7 @@ class AlbumTrackSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="song.id")
     title = serializers.CharField(source="song.title")
     duration_seconds = serializers.IntegerField(source="song.duration_seconds")
+    lyrics = serializers.CharField(source="song.lyrics")
     audio_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     genres = GenreSerializer(source="song.genres", many=True)
@@ -69,6 +72,7 @@ class AlbumTrackSerializer(serializers.ModelSerializer):
             "title",
             "track_number",
             "duration_seconds",
+            "lyrics",
             "audio_url",
             "cover_url",
             "genres",
@@ -120,6 +124,7 @@ class SearchSongSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "duration_seconds",
+            "lyrics",
             "audio_url",
             "album_id",
             "album_title",
@@ -167,6 +172,7 @@ class SongSerializer(serializers.ModelSerializer):
             "title",
             "audio_url",
             "duration_seconds",
+            "lyrics",
             "cover_url",
             "genres",
             "moods",
@@ -259,6 +265,13 @@ class CoverImageField(serializers.ImageField):
 
 
 class NullableYearField(serializers.IntegerField):
+    def to_internal_value(self, data):
+        if data in ("", None):
+            return None
+        return super().to_internal_value(data)
+
+
+class OptionalDurationField(serializers.IntegerField):
     def to_internal_value(self, data):
         if data in ("", None):
             return None
@@ -419,7 +432,16 @@ class AdminSongSerializer(serializers.ModelSerializer):
     title = serializers.CharField(min_length=1, max_length=200)
     audio_file = AudioFileField(write_only=True)
     cover = CoverImageField(required=False, allow_null=True, write_only=True)
-    duration_seconds = serializers.IntegerField(min_value=0)
+    duration_seconds = OptionalDurationField(
+        min_value=0,
+        required=False,
+        allow_null=True,
+    )
+    lyrics = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=50000,
+    )
     genre_ids = ExistingPKListField(
         queryset=Genre.objects.all(),
         not_found_message="Жанры не найдены",
@@ -440,6 +462,7 @@ class AdminSongSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "duration_seconds",
+            "lyrics",
             "audio_url",
             "cover_url",
             "audio_file",
@@ -456,9 +479,9 @@ class AdminSongSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._extracted_cover = None
         if self.instance is not None:
             self.fields["audio_file"].required = False
-            self.fields["duration_seconds"].required = False
             if self.partial:
                 self.fields["title"].required = False
 
@@ -480,6 +503,35 @@ class AdminSongSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Это поле обязательно.")
         return value
+
+    def validate_lyrics(self, value):
+        return value.replace("\r\n", "\n").replace("\r", "\n")
+
+    def validate(self, attrs):
+        audio = attrs.get("audio_file")
+        is_new_audio = isinstance(audio, UploadedFile)
+        extracted_duration = None
+        if is_new_audio:
+            metadata = extract_audio_metadata(audio)
+            extracted_duration = metadata.get("duration_seconds")
+            self._extracted_cover = metadata.get("cover")
+
+        if extracted_duration:
+            attrs["duration_seconds"] = extracted_duration
+        elif attrs.get("duration_seconds") is not None:
+            pass
+        elif self.instance is not None:
+            attrs.pop("duration_seconds", None)
+        else:
+            raise serializers.ValidationError(
+                {
+                    "duration_seconds": (
+                        "Не удалось определить продолжительность из файла. "
+                        "Укажите её вручную."
+                    )
+                }
+            )
+        return attrs
 
     def validate_album_assignments(self, value):
         album_ids = [item["album_id"] for item in value]
@@ -520,6 +572,8 @@ class AdminSongSerializer(serializers.ModelSerializer):
         genre_ids = validated_data.pop("genre_ids", [])
         mood_ids = validated_data.pop("mood_ids", [])
         album_assignments = validated_data.pop("album_assignments", [])
+        if not validated_data.get("cover") and self._extracted_cover:
+            validated_data["cover"] = self._extracted_cover
         song = Song.objects.create(**validated_data)
         if genre_ids:
             song.genres.set(genre_ids)
@@ -534,6 +588,12 @@ class AdminSongSerializer(serializers.ModelSerializer):
         genre_ids = validated_data.pop("genre_ids", serializers.empty)
         mood_ids = validated_data.pop("mood_ids", serializers.empty)
         album_assignments = validated_data.pop("album_assignments", serializers.empty)
+        if (
+            "cover" not in validated_data
+            and self._extracted_cover
+            and not instance.cover
+        ):
+            validated_data["cover"] = self._extracted_cover
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
