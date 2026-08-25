@@ -11,7 +11,7 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .admin import SongAdminForm
+from .admin import AlbumAdminForm, SongAdminForm
 from .models import Album, AlbumSong, Artist, Genre, Mood, Song
 
 
@@ -163,6 +163,7 @@ class AdminAPITestCase(APITestCase):
         data = create.data["data"]
         self.assertEqual(data["title"], "Новый Альбом")
         self.assertEqual(data["year"], 2024)
+        self.assertEqual(data["description"], "")
         self.assertEqual(data["artist"], {"id": artist.id, "name": "Мот"})
         self.assertTrue(data["cover_url"])
         album_id = data["id"]
@@ -192,6 +193,60 @@ class AdminAPITestCase(APITestCase):
 
         delete = self.client.delete(f"/api/v1/admin/albums/{album_id}/")
         self.assertEqual(delete.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_album_description_saved_and_public(self):
+        artist = Artist.objects.create(name="Мот")
+        text = "Дебютный альбом. Короткие песни про ночной город."
+        create = self.client.post(
+            "/api/v1/admin/albums/",
+            {
+                "title": "Ночной город",
+                "artist_id": artist.id,
+                "year": 2024,
+                "description": f"  {text}  \r\n",
+            },
+            format="multipart",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create.data["data"]["description"], text)
+        album_id = create.data["data"]["id"]
+
+        too_long = self.client.patch(
+            f"/api/v1/admin/albums/{album_id}/",
+            {"description": "а" * 501},
+            format="multipart",
+        )
+        self.assertEqual(too_long.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("description", too_long.data["error"]["details"])
+
+        guest = self.client_class()
+        detail = guest.get(f"/api/v1/albums/{album_id}/")
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail.data["data"]["description"], text)
+
+    def test_album_admin_form_description_max_length(self):
+        artist = Artist.objects.create(name="Мот")
+        valid = AlbumAdminForm(
+            data={
+                "title": "Альбом",
+                "artist": artist.id,
+                "year": 2024,
+                "description": "а" * 500,
+            }
+        )
+        self.assertTrue(valid.is_valid(), valid.errors)
+        album = valid.save()
+        self.assertEqual(len(album.description), 500)
+
+        too_long = AlbumAdminForm(
+            data={
+                "title": "Другой",
+                "artist": artist.id,
+                "description": "а" * 501,
+            }
+        )
+        self.assertFalse(too_long.is_valid())
+        self.assertIn("description", too_long.errors)
 
     def test_album_cover_rejects_gif_and_oversize(self):
         artist = Artist.objects.create(name="Мот")
@@ -518,6 +573,7 @@ class AdminAPITestCase(APITestCase):
         guest = self.client_class()
         detail = guest.get(f"/api/v1/albums/{album.id}/")
         self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail.data["data"]["description"], "")
         track = detail.data["data"]["tracks"][0]
         self.assertEqual(track["lyrics"], "Первый куплет\nстрока\n\nПрипев")
 

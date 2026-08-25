@@ -93,7 +93,15 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ("id", "title", "year", "cover_url", "artist", "tracks")
+        fields = (
+            "id",
+            "title",
+            "year",
+            "cover_url",
+            "description",
+            "artist",
+            "tracks",
+        )
 
     def get_cover_url(self, obj):
         return media_url(obj.cover)
@@ -361,6 +369,11 @@ class AdminAlbumSerializer(serializers.ModelSerializer):
     )
     cover = CoverImageField(required=False, allow_null=True, write_only=True)
     title = serializers.CharField(min_length=1, max_length=200)
+    description = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=500,
+    )
     year = NullableYearField(
         required=False,
         allow_null=True,
@@ -374,6 +387,7 @@ class AdminAlbumSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "year",
+            "description",
             "cover_url",
             "cover",
             "artist",
@@ -390,6 +404,9 @@ class AdminAlbumSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Это поле обязательно.")
         return value
+
+    def validate_description(self, value):
+        return value.replace("\r\n", "\n").replace("\r", "\n").strip()
 
     def validate(self, attrs):
         artist = attrs.get("artist") or getattr(self.instance, "artist", None)

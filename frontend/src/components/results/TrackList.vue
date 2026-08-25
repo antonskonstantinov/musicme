@@ -21,6 +21,10 @@ const artistName = computed(
   () => props.album.artist?.name || props.album.artist_name || "",
 );
 
+const albumDescription = computed(() =>
+  String(props.album.description || "").trim(),
+);
+
 function formatDuration(seconds) {
   const total = Math.floor(Number(seconds) || 0);
   const minutes = Math.floor(total / 60);
@@ -52,21 +56,38 @@ function showLyrics(track) {
       Назад
     </button>
 
-    <div class="mb-6 flex gap-4">
+    <div class="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
       <img
         v-if="album.cover_url"
         :src="album.cover_url"
         :alt="album.title"
-        class="h-40 w-40 shrink-0 rounded-lg object-cover"
+        class="h-40 w-40 shrink-0 rounded-xl object-cover shadow-lg shadow-black/40 sm:h-44 sm:w-44"
       />
       <div
         v-else
-        class="h-40 w-40 shrink-0 rounded-lg bg-gray-800"
+        class="h-40 w-40 shrink-0 rounded-xl bg-gray-800 sm:h-44 sm:w-44"
       />
-      <div class="min-w-0">
-        <h2 class="text-2xl font-bold text-white">{{ album.title }}</h2>
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          {{ album.title }}
+        </h2>
         <p class="mt-1 text-gray-300">{{ artistName }}</p>
-        <p class="text-gray-400">{{ album.year }}</p>
+        <p v-if="album.year" class="text-sm text-gray-500">{{ album.year }}</p>
+        <div
+          v-if="albumDescription"
+          class="mt-4 max-w-xl border-l border-white/20 pl-4"
+        >
+          <p
+            class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500"
+          >
+            Об альбоме
+          </p>
+          <p
+            class="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-gray-300"
+          >
+            {{ albumDescription }}
+          </p>
+        </div>
       </div>
     </div>
 

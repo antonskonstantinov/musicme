@@ -15,6 +15,13 @@ class Album(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     year = models.IntegerField(null=True, blank=True, db_index=True)
     cover = models.ImageField(upload_to="albums/covers/", null=True, blank=True)
+    description = models.TextField(
+        "Описание",
+        blank=True,
+        default="",
+        max_length=500,
+        help_text="Необязательно. Краткое описание альбома (до 500 символов).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

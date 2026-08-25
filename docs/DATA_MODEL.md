@@ -32,6 +32,7 @@ erDiagram
         bigint artist_id FK "NOT NULL"
         int year "NULL"
         varchar cover_url "NULL"
+        varchar(500) description "NULL / blank"
         datetime created_at "auto"
         datetime updated_at "auto"
         constraint unique_artist_title "UNIQUE(artist_id, title)"
@@ -93,10 +94,11 @@ erDiagram
 │ name (UK)   │         │ title       │         │ album_id (FK)│         │ title       │
 │ created_at  │         │ year        │         │ song_id (FK) │         │ audio_url   │
 │ updated_at  │         │ cover_url   │         │ track_number │         │ duration    │
-└─────────────┘         │ artist_id   │         │ created_at   │         │ cover_url   │
-                        │ created_at  │         └──────────────┘         │ created_at  │
-                        │ updated_at  │                                  │ updated_at  │
-                        └─────────────┘                                  └─────────────┘
+└─────────────┘         │ description │         │ created_at   │         │ cover_url   │
+                        │ artist_id   │         └──────────────┘         │ created_at  │
+                        │ created_at  │                                  │ updated_at  │
+                        │ updated_at  │                                  └─────────────┘
+                        └─────────────┘
                                                                            │         │
                                                                            │         │
                                                                      M:N   │         │   M:N
@@ -145,6 +147,7 @@ title	CharField(200)	NOT NULL	Название альбома
 artist	ForeignKey(Artist)	NOT NULL, CASCADE	Владелец альбома
 year	IntegerField	NULL, BLANK	Год выпуска (может быть неизвестен)
 cover	ImageField	NULL, BLANK	Файл обложки
+description	TextField(500)	BLANK, DEFAULT ''	Краткое описание альбома (необязательно, показывается на сайте)
 created_at	DateTimeField	auto_now_add	Дата создания
 updated_at	DateTimeField	auto_now	Дата обновления
 Индексы: artist (FK), year
@@ -235,6 +238,7 @@ M2M: Song.genres → SongGenre, Song.moods → SongMood
 Файлы: аудио (mp3, wav, flac, ogg) / обложки (jpg, png, webp)	DRF Serializer
 Максимальный размер аудиофайла: 20 MB	DRF Serializer
 year может быть NULL (неизвестен)	DRF Serializer
+Описание альбома — необязательно, до 500 символов	Django Admin / DRF
 Длительность трека берётся из аудиофайла; вручную — только если не определилась	Django Admin / DRF
 Обложка трека может быть извлечена из тегов mp3 (APIC)	Django Admin / DRF
 8. Каскадное удаление (Cascade Behavior)

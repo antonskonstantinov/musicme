@@ -94,11 +94,40 @@ class ArtistAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
+class AlbumAdminForm(forms.ModelForm):
+    class Meta:
+        model = Album
+        fields = ("title", "artist", "year", "cover", "description")
+        widgets = {
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 6,
+                    "cols": 80,
+                    "maxlength": 500,
+                    "placeholder": "Краткое описание альбома (необязательно)",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "description" in self.fields:
+            self.fields["description"].required = False
+            self.fields["description"].help_text = (
+                "Необязательно. До 500 символов. Показывается на странице альбома."
+            )
+
+
 @admin.register(Album)
 class AlbumAdmin(admin.ModelAdmin):
-    list_display = ("title", "artist", "year", "cover_preview")
+    form = AlbumAdminForm
+    list_display = ("title", "artist", "year", "cover_preview", "has_description")
     search_fields = ("title",)
     inlines = [AlbumSongInline]
+
+    @admin.display(boolean=True, description="Описание")
+    def has_description(self, obj):
+        return bool((obj.description or "").strip())
 
     @admin.display(description="Обложка")
     def cover_preview(self, obj):

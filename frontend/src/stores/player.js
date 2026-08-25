@@ -43,22 +43,30 @@ export const usePlayerStore = defineStore("player", () => {
     currentTime.value = seconds;
   }
 
+  function peekNextTrack() {
+    if (!queue.value.length || currentIndex.value < 0) {
+      return null;
+    }
+    return queue.value[(currentIndex.value + 1) % queue.value.length];
+  }
+
   function next() {
-    if (currentIndex.value < 0 || currentIndex.value >= queue.value.length - 1) {
+    if (!queue.value.length || currentIndex.value < 0) {
       isPlaying.value = false;
       return;
     }
-    currentIndex.value += 1;
+    currentIndex.value = (currentIndex.value + 1) % queue.value.length;
     currentTrack.value = queue.value[currentIndex.value];
     currentTime.value = 0;
     isPlaying.value = true;
   }
 
   function prev() {
-    if (currentIndex.value <= 0) {
+    if (!queue.value.length || currentIndex.value < 0) {
       return;
     }
-    currentIndex.value -= 1;
+    currentIndex.value =
+      (currentIndex.value - 1 + queue.value.length) % queue.value.length;
     currentTrack.value = queue.value[currentIndex.value];
     currentTime.value = 0;
     isPlaying.value = true;
@@ -89,6 +97,7 @@ export const usePlayerStore = defineStore("player", () => {
     togglePlay,
     stop,
     seekTo,
+    peekNextTrack,
     next,
     prev,
     openLyrics,
