@@ -1,0 +1,34 @@
+# Автодеплой на VPS при пуше в main.
+# Job выполняется на self-hosted runner (тот же сервер, где крутится Docker Compose).
+# Как один раз настроить сервер и GitHub — в docs/DEPLOY.md.
+
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "README.md"
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: [self-hosted, muzzzic-prod]
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Build and restart production stack
+        env:
+          DEPLOY_ENV_FILE: /opt/muzzzic/.env
+        run: bash scripts/deploy-prod.sh

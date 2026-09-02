@@ -598,9 +598,10 @@ text
    - `docker-compose.prod.yml` (отдельный от dev)
 
 8. **Опционально:**
-   - CI/CD через GitHub Actions (автодеплой при push)
    - Сиды данных (management command для начального контента)
    - Логирование (gunicorn access/error logs)
+
+Автодеплой при push в `main`: GitHub Actions + self-hosted runner на VPS. Файлы: `.github/workflows/deploy.yml`, `scripts/deploy-prod.sh`, `scripts/install-github-runner.sh`, `scripts/register-github-runner.sh`. Инструкция: `docs/DEPLOY.md`.
 
 **Критерий готовности:**
 - [ ] `docker compose -f docker-compose.prod.yml up` запускает прод-версию
@@ -609,3 +610,4 @@ text
 - [ ] Медиа-файлы сохраняются и отдаются
 - [ ] README содержит инструкцию по деплою
 - [ ] Бэкапы настроены
+- [ ] Push в `main` обновляет production через self-hosted runner (см. docs/DEPLOY.md)

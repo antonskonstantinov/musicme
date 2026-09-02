@@ -124,6 +124,10 @@ docker compose -f docker-compose.prod.yml up -d --build frontend
 
 В `.env` можно включить `DJANGO_SECURE_SSL_REDIRECT=1`.
 
+### Автодеплой при push в `main`
+
+На VPS ставится GitHub Actions **self-hosted runner**: после пуша в `main` сервер сам пересобирает Docker Compose. Пошаговая инструкция для DevOps (без опыта CI/CD): **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+
 ### Бэкапы
 
 ```bash
@@ -145,12 +149,17 @@ muzzzic/
 ├── docker-compose.yml           # разработка
 ├── docker-compose.prod.yml      # VPS / production
 ├── .env.example
+├── .github/workflows/deploy.yml # автодеплой на self-hosted runner
 ├── backend/
 ├── frontend/
 │   ├── Dockerfile               # Vite dev
 │   ├── Dockerfile.prod          # nginx + dist
 │   └── nginx.conf
-├── scripts/backup.sh
+├── scripts/
+│   ├── backup.sh
+│   ├── deploy-prod.sh
+│   ├── install-github-runner.sh
+│   └── register-github-runner.sh
 └── docs/
 ```
 
@@ -161,6 +170,7 @@ muzzzic/
 - [API_CONTRACT.MD](docs/API_CONTRACT.MD) — контракт API
 - [DATA_MODEL.md](docs/DATA_MODEL.md) — модель данных
 - [FRONTEND_SPEC.MD](docs/FRONTEND_SPEC.MD) — спецификация фронтенда
+- [DEPLOY.md](docs/DEPLOY.md) — автодеплой на VPS (GitHub Actions self-hosted runner)
 
 ## Разработка
 
