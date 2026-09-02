@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
       <div class="text-2xl font-bold tracking-tight text-white">MusicMe</div>
       <p class="mt-0.5 text-xs leading-snug text-gray-400">
         Личная библиотека музыкальных произведений. Проект Антона Константинова,
-        созданный в демонстрационных целях
+        созданный в демонстрационных целях. Контакт в telegram - @permanentov
       </p>
     </div>
 
