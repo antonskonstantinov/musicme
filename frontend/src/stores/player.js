@@ -40,7 +40,16 @@ export const usePlayerStore = defineStore("player", () => {
   }
 
   function seekTo(seconds) {
-    currentTime.value = seconds;
+    const value = Number(seconds);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const max = Number(duration.value);
+    if (Number.isFinite(max) && max > 0) {
+      currentTime.value = Math.min(Math.max(0, value), max);
+      return;
+    }
+    currentTime.value = Math.max(0, value);
   }
 
   function peekNextTrack() {

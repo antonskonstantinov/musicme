@@ -2,10 +2,11 @@ import json
 import os
 import tempfile
 from io import BytesIO
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from mutagen.id3 import APIC, ID3
 from PIL import Image
 from rest_framework import status
@@ -609,3 +610,65 @@ class AdminAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["error"]["message"], "Альбом не найден")
+
+
+class MediaRangeTests(SimpleTestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        override = override_settings(MEDIA_ROOT=self.tmp.name)
+        override.enable()
+        self.addCleanup(override.disable)
+
+        self.payload = bytes(range(256)) * 20
+        dest = Path(self.tmp.name) / "songs" / "audio" / "seek.mp3"
+        dest.parent.mkdir(parents=True)
+        dest.write_bytes(self.payload)
+
+    def _body(self, response):
+        if getattr(response, "streaming", False):
+            return b"".join(response.streaming_content)
+        return response.content
+
+    def test_full_response_advertises_accept_ranges(self):
+        response = self.client.get("/media/songs/audio/seek.mp3")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Accept-Ranges"], "bytes")
+        self.assertEqual(response["Content-Type"], "audio/mpeg")
+        self.assertEqual(int(response["Content-Length"]), len(self.payload))
+        self.assertEqual(self._body(response), self.payload)
+
+    def test_range_returns_partial_content(self):
+        response = self.client.get(
+            "/media/songs/audio/seek.mp3",
+            HTTP_RANGE="bytes=100-199",
+        )
+        self.assertEqual(response.status_code, 206)
+        self.assertEqual(response["Accept-Ranges"], "bytes")
+        self.assertEqual(response["Content-Range"], f"bytes 100-199/{len(self.payload)}")
+        self.assertEqual(int(response["Content-Length"]), 100)
+        self.assertEqual(self._body(response), self.payload[100:200])
+
+    def test_open_ended_range(self):
+        response = self.client.get(
+            "/media/songs/audio/seek.mp3",
+            HTTP_RANGE="bytes=5000-",
+        )
+        self.assertEqual(response.status_code, 206)
+        self.assertEqual(
+            response["Content-Range"],
+            f"bytes 5000-{len(self.payload) - 1}/{len(self.payload)}",
+        )
+        self.assertEqual(self._body(response), self.payload[5000:])
+
+    def test_unsatisfiable_range(self):
+        response = self.client.get(
+            "/media/songs/audio/seek.mp3",
+            HTTP_RANGE="bytes=99999-",
+        )
+        self.assertEqual(response.status_code, 416)
+        self.assertEqual(response["Content-Range"], f"bytes */{len(self.payload)}")
+
+    def test_missing_file(self):
+        response = self.client.get("/media/songs/audio/missing.mp3")
+        self.assertEqual(response.status_code, 404)

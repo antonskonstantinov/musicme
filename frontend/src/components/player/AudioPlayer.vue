@@ -15,7 +15,10 @@ const audioB = ref(null);
 const usingA = ref(true);
 const isLoading = ref(false);
 const primed = ref(false);
+const isSeeking = ref(false);
+const seekPreview = ref(0);
 let lastPositionSec = -1;
+let pendingSeekSec = null;
 
 const coverUrl = computed(
   () =>
@@ -36,8 +39,20 @@ const subtitle = computed(() =>
   [artistName.value, albumTitle.value].filter(Boolean).join(" — "),
 );
 
-const duration = computed(
-  () => player.duration || player.currentTrack?.duration_seconds || 0,
+const duration = computed(() => {
+  const fromPlayer = Number(player.duration);
+  if (Number.isFinite(fromPlayer) && fromPlayer > 0) {
+    return fromPlayer;
+  }
+  const fromTrack = Number(player.currentTrack?.duration_seconds);
+  if (Number.isFinite(fromTrack) && fromTrack > 0) {
+    return fromTrack;
+  }
+  return 0;
+});
+
+const sliderValue = computed(() =>
+  isSeeking.value ? seekPreview.value : Number(player.currentTime) || 0,
 );
 
 function formatTime(seconds) {
@@ -184,8 +199,75 @@ async function syncAudio() {
   updateMediaSession();
 }
 
+function clampSeek(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const total = Number(duration.value);
+  if (Number.isFinite(total) && total > 0) {
+    return Math.min(Math.max(0, value), total);
+  }
+  return Math.max(0, value);
+}
+
+function applySeek(seconds) {
+  const next = clampSeek(seconds);
+  pendingSeekSec = next;
+  seekPreview.value = next;
+  player.seekTo(next);
+  const el = activeEl();
+  if (el && el.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    try {
+      el.currentTime = next;
+    } catch {
+      // Some browsers reject currentTime before they can seek.
+    }
+  }
+  updatePositionState();
+}
+
+function onSeekStart() {
+  isSeeking.value = true;
+  seekPreview.value = sliderValue.value;
+}
+
+function onSeekInput(event) {
+  const seconds = Number(event.target.value);
+  if (!Number.isFinite(seconds)) {
+    return;
+  }
+  seekPreview.value = seconds;
+  applySeek(seconds);
+}
+
+function onSeekCommit(event) {
+  const seconds = Number(event.target.value);
+  if (Number.isFinite(seconds)) {
+    applySeek(seconds);
+  }
+  isSeeking.value = false;
+}
+
+function shouldIgnoreTimeUpdate(current) {
+  if (isSeeking.value) {
+    return true;
+  }
+  if (pendingSeekSec == null) {
+    return false;
+  }
+  if (Math.abs(current - pendingSeekSec) > 1) {
+    return true;
+  }
+  pendingSeekSec = null;
+  return false;
+}
+
 function onTimeUpdate(event) {
   if (!isActiveTarget(event.target)) {
+    return;
+  }
+  if (shouldIgnoreTimeUpdate(event.target.currentTime)) {
     return;
   }
   player.currentTime = event.target.currentTime;
@@ -200,13 +282,37 @@ function onLoadedMetadata(event) {
   if (!isActiveTarget(event.target)) {
     return;
   }
-  player.duration = event.target.duration || player.duration;
+  const loaded = Number(event.target.duration);
+  if (Number.isFinite(loaded) && loaded > 0) {
+    player.duration = loaded;
+  }
+  if (pendingSeekSec != null && event.target.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    try {
+      event.target.currentTime = pendingSeekSec;
+    } catch {
+      // Metadata arrived but the element is not seekable yet.
+    }
+  }
   isLoading.value = false;
+  updatePositionState();
+}
+
+function onAudioSeeked(event) {
+  if (!isActiveTarget(event.target)) {
+    return;
+  }
+  pendingSeekSec = null;
+  if (!isSeeking.value) {
+    player.currentTime = event.target.currentTime;
+  }
   updatePositionState();
 }
 
 function onWaiting(event) {
   if (!isActiveTarget(event.target)) {
+    return;
+  }
+  if (isSeeking.value || pendingSeekSec != null) {
     return;
   }
   isLoading.value = true;
@@ -259,15 +365,6 @@ function onPause(event) {
   updateMediaSession();
 }
 
-function onSeek(event) {
-  const seconds = Number(event.target.value);
-  player.seekTo(seconds);
-  const el = activeEl();
-  if (el) {
-    el.currentTime = seconds;
-  }
-  updatePositionState();
-}
 
 function updatePositionState() {
   if (!("mediaSession" in navigator)) {
@@ -337,11 +434,7 @@ function bindMediaSessionHandlers() {
       if (details?.seekTime == null) {
         return;
       }
-      player.seekTo(details.seekTime);
-      const el = activeEl();
-      if (el) {
-        el.currentTime = details.seekTime;
-      }
+      applySeek(details.seekTime);
     },
   };
   for (const [action, handler] of Object.entries(handlers)) {
@@ -375,13 +468,34 @@ function clearMediaSession() {
   }
 }
 
+function endSeekFromPointer() {
+  if (!isSeeking.value) {
+    return;
+  }
+  applySeek(seekPreview.value);
+  isSeeking.value = false;
+}
+
 onMounted(() => {
   bindMediaSessionHandlers();
+  window.addEventListener("pointerup", endSeekFromPointer);
+  window.addEventListener("pointercancel", endSeekFromPointer);
 });
 
 onBeforeUnmount(() => {
   clearMediaSession();
+  window.removeEventListener("pointerup", endSeekFromPointer);
+  window.removeEventListener("pointercancel", endSeekFromPointer);
 });
+
+watch(
+  () => player.currentTrack,
+  () => {
+    pendingSeekSec = null;
+    isSeeking.value = false;
+    seekPreview.value = 0;
+  },
+);
 
 watch(
   () => [player.currentTrack, player.isPlaying],
@@ -408,6 +522,7 @@ watch([audioA, audioB], () => {
         playsinline
         @timeupdate="onTimeUpdate"
         @loadedmetadata="onLoadedMetadata"
+        @seeked="onAudioSeeked"
         @waiting="onWaiting"
         @canplay="onCanPlay"
         @error="onError"
@@ -421,6 +536,7 @@ watch([audioA, audioB], () => {
         playsinline
         @timeupdate="onTimeUpdate"
         @loadedmetadata="onLoadedMetadata"
+        @seeked="onAudioSeeked"
         @waiting="onWaiting"
         @canplay="onCanPlay"
         @error="onError"
@@ -471,13 +587,19 @@ watch([audioA, audioB], () => {
           min="0"
           :max="duration"
           step="0.1"
-          :value="player.currentTime"
-          class="h-1 min-w-[8rem] flex-1 accent-white"
-          @input="onSeek"
+          :value="sliderValue"
+          :disabled="duration <= 0"
+          class="h-2 min-w-[8rem] flex-1 cursor-pointer accent-white disabled:cursor-not-allowed"
+          aria-label="Перемотка"
+          @pointerdown="onSeekStart"
+          @input="onSeekInput"
+          @change="onSeekCommit"
+          @pointerup="onSeekCommit"
+          @pointercancel="onSeekCommit"
         />
 
         <span class="shrink-0 text-xs tabular-nums text-gray-400">
-          {{ formatTime(player.currentTime) }} / {{ formatTime(duration) }}
+          {{ formatTime(sliderValue) }} / {{ formatTime(duration) }}
         </span>
 
         <button

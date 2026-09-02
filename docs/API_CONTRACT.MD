@@ -38,11 +38,13 @@ json
 200	Успешный запрос
 201	Ресурс создан
 204	Ресурс удалён (без тела ответа)
+206	Частичное содержимое (HTTP Range, стриминг аудио)
 400	Ошибка валидации
 401	Требуется аутентификация
 403	Недостаточно прав
 404	Ресурс не найден
 405	Метод не поддерживается
+416	Запрошенный диапазон байт недоступен
 500	Внутренняя ошибка сервера
 2. Публичные эндпоинты (без аутентификации)
 2.1. Список жанров
@@ -354,7 +356,11 @@ lyrics — текст песни (может быть пустой строко�
 
 description — краткое описание альбома (может быть пустой строкой, до 500 символов)
 
-audio_url и cover_url — относительные пути (фронтенд добавляет базовый URL)
+audio_url и cover_url — относительные пути FileField/ImageField (фронтенд добавляет базовый URL). Фактические пути:
+
+- аудио: `/media/songs/audio/{filename}`
+- обложка песни: `/media/songs/covers/{filename}`
+- обложка альбома: `/media/albums/covers/{filename}`
 
 Ошибка 404:
 
@@ -366,19 +372,61 @@ json
     "details": {}
   }
 }
-2.7. Стриминг аудио
-GET /media/audio/{filename}
+2.7. Стриминг медиа
+GET /media/{path}
+HEAD /media/{path}
 
-Ответ: Бинарный поток аудиофайла с заголовками:
+`path` — относительный путь файла внутри `MEDIA_ROOT` (то, что приходит в `audio_url` / `cover_url` без префикса `/media/`).
 
-text
+Примеры:
+
+- `GET /media/songs/audio/song.mp3`
+- `GET /media/albums/covers/album.jpg`
+
+Раздача: Django-view `apps.catalog.media.serve_media` (dev и production). Nginx в production проксирует `/media/` на gunicorn и пробрасывает заголовок `Range`.
+
+Полный ответ (без Range):
+
+```
+HTTP/1.1 200 OK
 Content-Type: audio/mpeg
+Content-Length: <размер файла>
 Accept-Ranges: bytes
+```
+
+Частичный ответ (seek в плеере):
+
+Запрос:
+
+```
+Range: bytes=1000000-1000100
+```
+
+или открытый диапазон (так делает HTML5 Audio):
+
+```
+Range: bytes=1000000-
+```
+
+Ответ:
+
+```
+HTTP/1.1 206 Partial Content
+Content-Type: audio/mpeg
+Content-Range: bytes 1000000-1000100/5631069
+Content-Length: 101
+Accept-Ranges: bytes
+```
+
 Логика:
 
-Поддержка HTTP Range для частичной загрузки (seek в плеере)
+- Без `Range` — весь файл, всегда с `Accept-Ranges: bytes`
+- С валидным `Range` — `206` и только запрошенные байты (нужно для перемотки в плеере)
+- Недоступный диапазон — `416` и `Content-Range: bytes */<size>`
+- Файл не найден — `404`
+- Не GET/HEAD — `405`
 
-Файлы отдаются статически (nginx / Django static / Whitenoise)
+Без Range браузер при клике по ползунку скачивает файл с начала и сбрасывает позицию в 0.
 
 3. Административные эндпоинты (только для админа)
 3.1. CRUD: Исполнители

@@ -146,7 +146,7 @@ id	BigAutoField	PK	Идентификатор
 title	CharField(200)	NOT NULL	Название альбома
 artist	ForeignKey(Artist)	NOT NULL, CASCADE	Владелец альбома
 year	IntegerField	NULL, BLANK	Год выпуска (может быть неизвестен)
-cover	ImageField	NULL, BLANK	Файл обложки
+cover	ImageField	NULL, BLANK	Файл обложки (`upload_to=albums/covers/`, URL `/media/albums/covers/…`)
 description	TextField(500)	BLANK, DEFAULT ''	Краткое описание альбома (необязательно, показывается на сайте)
 created_at	DateTimeField	auto_now_add	Дата создания
 updated_at	DateTimeField	auto_now	Дата обновления
@@ -157,9 +157,9 @@ updated_at	DateTimeField	auto_now	Дата обновления
 Поле	Тип	Ограничения	Описание
 id	BigAutoField	PK	Идентификатор
 title	CharField(200)	NOT NULL	Название песни
-audio_file	FileField	NOT NULL	Аудиофайл (mp3/wav/flac/ogg)
+audio_file	FileField	NOT NULL	Аудиофайл (mp3/wav/flac/ogg; `upload_to=songs/audio/`, URL `/media/songs/audio/…`)
 duration_seconds	IntegerField	NOT NULL, DEFAULT 0	Длительность в секундах (из файла при загрузке; вручную — только если не удалось определить)
-cover	ImageField	NULL, BLANK	Обложка песни (из ID3 APIC при загрузке mp3, либо файл из админки; fallback на фронте — обложка альбома)
+cover	ImageField	NULL, BLANK	Обложка песни (`upload_to=songs/covers/`; из ID3 APIC при загрузке mp3 либо файл из админки; fallback на фронте — обложка альбома)
 lyrics	TextField	BLANK, DEFAULT ''	Текст песни (необязательно, показывается на сайте)
 genres	M2M(Genre)	BLANK	Жанры песни
 moods	M2M(Mood)	BLANK	Настроения песни
