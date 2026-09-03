@@ -138,6 +138,16 @@ function primeElements() {
   unlockElement(audioB.value);
 }
 
+function currentTrackUrl(track = player.currentTrack) {
+  if (!track) {
+    return "";
+  }
+  if (player.isMinus && track.minus_url) {
+    return track.minus_url;
+  }
+  return track.audio_url || "";
+}
+
 function prepareStandby() {
   const nextTrack = player.peekNextTrack();
   const standby = standbyEl();
@@ -168,17 +178,18 @@ function promoteStandbyIfReady(trackUrl) {
 
 async function syncAudio() {
   const track = player.currentTrack;
+  const trackUrl = currentTrackUrl(track);
   let el = activeEl();
-  if (!el || !track?.audio_url) {
+  if (!el || !trackUrl) {
     return;
   }
 
-  if (el.dataset.trackSrc !== track.audio_url) {
-    if (promoteStandbyIfReady(track.audio_url)) {
+  if (el.dataset.trackSrc !== trackUrl) {
+    if (promoteStandbyIfReady(trackUrl)) {
       el = activeEl();
       isLoading.value = false;
     } else {
-      assignSrc(el, track.audio_url);
+      assignSrc(el, trackUrl);
       isLoading.value = true;
       player.duration = track.duration_seconds || 0;
     }
@@ -402,7 +413,7 @@ function updateMediaSession() {
 
   const artworkUrl = absoluteUrl(coverUrl.value);
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: track.title || "",
+    title: player.isMinus ? `${track.title || ""} (минус)` : track.title || "",
     artist: artistName.value,
     album: albumTitle.value,
     artwork: artworkUrl
@@ -492,7 +503,7 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => player.currentTrack,
+  () => [player.currentTrack, player.isMinus],
   () => {
     pendingSeekSec = null;
     isSeeking.value = false;
@@ -501,7 +512,7 @@ watch(
 );
 
 watch(
-  () => [player.currentTrack, player.isPlaying],
+  () => [player.currentTrack, player.isPlaying, player.isMinus],
   () => {
     syncAudio();
   },
@@ -560,6 +571,9 @@ watch([audioA, audioB], () => {
         <div class="min-w-0 flex-1">
           <p class="truncate font-medium text-white">
             {{ player.currentTrack.title }}
+            <span v-if="player.isMinus" class="ml-1 text-xs font-normal text-gray-400">
+              минус
+            </span>
           </p>
           <p class="truncate text-sm text-gray-400">{{ subtitle }}</p>
         </div>
@@ -612,6 +626,16 @@ watch([audioA, audioB], () => {
           @click="player.openLyrics(player.currentTrack)"
         >
           Текст
+        </button>
+
+        <button
+          v-if="player.currentTrack.minus_url"
+          type="button"
+          class="text-sm hover:text-white"
+          :class="player.isMinus ? 'text-white' : 'text-gray-400'"
+          @click="player.playMinus(player.currentTrack, player.queue)"
+        >
+          Минус
         </button>
 
         <button

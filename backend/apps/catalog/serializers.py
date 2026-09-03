@@ -61,6 +61,7 @@ class AlbumTrackSerializer(serializers.ModelSerializer):
     duration_seconds = serializers.IntegerField(source="song.duration_seconds")
     lyrics = serializers.CharField(source="song.lyrics")
     audio_url = serializers.SerializerMethodField()
+    minus_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     genres = GenreSerializer(source="song.genres", many=True)
     moods = MoodSerializer(source="song.moods", many=True)
@@ -74,6 +75,7 @@ class AlbumTrackSerializer(serializers.ModelSerializer):
             "duration_seconds",
             "lyrics",
             "audio_url",
+            "minus_url",
             "cover_url",
             "genres",
             "moods",
@@ -81,6 +83,9 @@ class AlbumTrackSerializer(serializers.ModelSerializer):
 
     def get_audio_url(self, obj):
         return media_url(obj.song.audio_file)
+
+    def get_minus_url(self, obj):
+        return media_url(obj.song.minus_file)
 
     def get_cover_url(self, obj):
         return media_url(obj.song.cover)
@@ -122,6 +127,7 @@ class SearchAlbumSerializer(serializers.ModelSerializer):
 
 class SearchSongSerializer(serializers.ModelSerializer):
     audio_url = serializers.SerializerMethodField()
+    minus_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     album_id = serializers.SerializerMethodField()
     album_title = serializers.SerializerMethodField()
@@ -136,6 +142,7 @@ class SearchSongSerializer(serializers.ModelSerializer):
             "duration_seconds",
             "lyrics",
             "audio_url",
+            "minus_url",
             "cover_url",
             "album_id",
             "album_title",
@@ -151,6 +158,9 @@ class SearchSongSerializer(serializers.ModelSerializer):
 
     def get_audio_url(self, obj):
         return media_url(obj.audio_file)
+
+    def get_minus_url(self, obj):
+        return media_url(obj.minus_file)
 
     def get_cover_url(self, obj):
         return media_url(obj.cover)
@@ -186,6 +196,7 @@ class CatalogTrackSerializer(serializers.ModelSerializer):
     duration_seconds = serializers.IntegerField(source="song.duration_seconds")
     lyrics = serializers.CharField(source="song.lyrics")
     audio_url = serializers.SerializerMethodField()
+    minus_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     album_id = serializers.IntegerField(source="album.id")
     album_title = serializers.CharField(source="album.title")
@@ -204,6 +215,7 @@ class CatalogTrackSerializer(serializers.ModelSerializer):
             "duration_seconds",
             "lyrics",
             "audio_url",
+            "minus_url",
             "cover_url",
             "album_id",
             "album_title",
@@ -217,6 +229,9 @@ class CatalogTrackSerializer(serializers.ModelSerializer):
     def get_audio_url(self, obj):
         return media_url(obj.song.audio_file)
 
+    def get_minus_url(self, obj):
+        return media_url(obj.song.minus_file)
+
     def get_cover_url(self, obj):
         return media_url(obj.song.cover)
 
@@ -226,6 +241,7 @@ class CatalogTrackSerializer(serializers.ModelSerializer):
 
 class SongSerializer(serializers.ModelSerializer):
     audio_url = serializers.SerializerMethodField()
+    minus_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     genres = GenreSerializer(many=True, read_only=True)
     moods = MoodSerializer(many=True, read_only=True)
@@ -236,6 +252,7 @@ class SongSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "audio_url",
+            "minus_url",
             "duration_seconds",
             "lyrics",
             "cover_url",
@@ -245,6 +262,9 @@ class SongSerializer(serializers.ModelSerializer):
 
     def get_audio_url(self, obj):
         return media_url(obj.audio_file)
+
+    def get_minus_url(self, obj):
+        return media_url(obj.minus_file)
 
     def get_cover_url(self, obj):
         return media_url(obj.cover)
@@ -499,12 +519,14 @@ class AlbumAssignmentListField(JSONListField):
 
 class AdminSongSerializer(serializers.ModelSerializer):
     audio_url = serializers.SerializerMethodField()
+    minus_url = serializers.SerializerMethodField()
     cover_url = serializers.SerializerMethodField()
     genres = GenreSerializer(many=True, read_only=True)
     moods = MoodSerializer(many=True, read_only=True)
     albums = serializers.SerializerMethodField()
     title = serializers.CharField(min_length=1, max_length=200)
     audio_file = AudioFileField(write_only=True)
+    minus_file = AudioFileField(required=False, allow_null=True, write_only=True)
     cover = CoverImageField(required=False, allow_null=True, write_only=True)
     duration_seconds = OptionalDurationField(
         min_value=0,
@@ -538,8 +560,10 @@ class AdminSongSerializer(serializers.ModelSerializer):
             "duration_seconds",
             "lyrics",
             "audio_url",
+            "minus_url",
             "cover_url",
             "audio_file",
+            "minus_file",
             "cover",
             "genres",
             "moods",
@@ -561,6 +585,9 @@ class AdminSongSerializer(serializers.ModelSerializer):
 
     def get_audio_url(self, obj):
         return media_url(obj.audio_file)
+
+    def get_minus_url(self, obj):
+        return media_url(obj.minus_file)
 
     def get_cover_url(self, obj):
         return media_url(obj.cover)

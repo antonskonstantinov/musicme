@@ -1,15 +1,21 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+function hasMinus(track) {
+  return Boolean(track?.minus_url);
+}
+
 export const usePlayerStore = defineStore("player", () => {
   const currentTrack = ref(null);
   const isPlaying = ref(false);
+  const isMinus = ref(false);
   const currentTime = ref(0);
   const duration = ref(0);
   const queue = ref([]);
   const currentIndex = ref(-1);
 
-  function playTrack(track, nextQueue) {
+  function playTrack(track, nextQueue, options = {}) {
+    const playInstrumental = Boolean(options.minus && hasMinus(track));
     currentTrack.value = track;
     if (nextQueue) {
       queue.value = nextQueue;
@@ -19,8 +25,16 @@ export const usePlayerStore = defineStore("player", () => {
       queue.value = [track];
       currentIndex.value = 0;
     }
+    isMinus.value = playInstrumental;
     currentTime.value = 0;
     isPlaying.value = true;
+  }
+
+  function playMinus(track, nextQueue) {
+    if (!hasMinus(track)) {
+      return;
+    }
+    playTrack(track, nextQueue, { minus: true });
   }
 
   function togglePlay() {
@@ -32,6 +46,7 @@ export const usePlayerStore = defineStore("player", () => {
 
   function stop() {
     isPlaying.value = false;
+    isMinus.value = false;
     currentTrack.value = null;
     currentTime.value = 0;
     duration.value = 0;
@@ -66,6 +81,7 @@ export const usePlayerStore = defineStore("player", () => {
     }
     currentIndex.value = (currentIndex.value + 1) % queue.value.length;
     currentTrack.value = queue.value[currentIndex.value];
+    isMinus.value = false;
     currentTime.value = 0;
     isPlaying.value = true;
   }
@@ -77,6 +93,7 @@ export const usePlayerStore = defineStore("player", () => {
     currentIndex.value =
       (currentIndex.value - 1 + queue.value.length) % queue.value.length;
     currentTrack.value = queue.value[currentIndex.value];
+    isMinus.value = false;
     currentTime.value = 0;
     isPlaying.value = true;
   }
@@ -97,12 +114,14 @@ export const usePlayerStore = defineStore("player", () => {
   return {
     currentTrack,
     isPlaying,
+    isMinus,
     currentTime,
     duration,
     queue,
     currentIndex,
     lyricsTrack,
     playTrack,
+    playMinus,
     togglePlay,
     stop,
     seekTo,

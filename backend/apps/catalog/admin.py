@@ -32,7 +32,14 @@ class SongAdminForm(forms.ModelForm):
 
     class Meta:
         model = Song
-        fields = ("title", "audio_file", "lyrics", "cover", "duration_seconds")
+        fields = (
+            "title",
+            "audio_file",
+            "minus_file",
+            "lyrics",
+            "cover",
+            "duration_seconds",
+        )
         widgets = {
             "lyrics": forms.Textarea(
                 attrs={
@@ -50,6 +57,11 @@ class SongAdminForm(forms.ModelForm):
             self.fields["lyrics"].required = False
             self.fields["lyrics"].help_text = (
                 "Необязательно. Текст будет доступен на сайте."
+            )
+        if "minus_file" in self.fields:
+            self.fields["minus_file"].required = False
+            self.fields["minus_file"].help_text = (
+                "Необязательно. Если загружена минусовка, на сайте появится кнопка «Минус»."
             )
 
     def clean(self):
@@ -142,14 +154,20 @@ class AlbumAdmin(admin.ModelAdmin):
 @admin.register(Song)
 class SongAdmin(admin.ModelAdmin):
     form = SongAdminForm
-    list_display = ("title", "duration_seconds", "cover_preview", "has_lyrics")
+    list_display = (
+        "title",
+        "duration_seconds",
+        "cover_preview",
+        "has_lyrics",
+        "has_minus",
+    )
     search_fields = ("title",)
     inlines = [SongGenreInline, SongMoodInline]
 
     def get_fieldsets(self, request, obj=None):
         main = (
             None,
-            {"fields": ("title", "audio_file", "lyrics", "cover")},
+            {"fields": ("title", "audio_file", "minus_file", "lyrics", "cover")},
         )
         duration = (
             "Продолжительность",
@@ -177,6 +195,10 @@ class SongAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Текст")
     def has_lyrics(self, obj):
         return bool((obj.lyrics or "").strip())
+
+    @admin.display(boolean=True, description="Минус")
+    def has_minus(self, obj):
+        return bool(obj.minus_file)
 
 
 @admin.register(AlbumSong)

@@ -299,6 +299,7 @@ class AdminAPITestCase(APITestCase):
         self.assertEqual(data["duration_seconds"], 215)
         self.assertEqual(data["lyrics"], "Куплет один\n\nПрипев")
         self.assertTrue(data["audio_url"])
+        self.assertIsNone(data["minus_url"])
         self.assertTrue(data["cover_url"])
         self.assertEqual(data["genres"], [{"id": genre.id, "name": "Hip-Hop"}])
         self.assertEqual(data["moods"], [{"id": mood.id, "name": "Энергичное"}])
@@ -577,6 +578,55 @@ class AdminAPITestCase(APITestCase):
         self.assertEqual(detail.data["data"]["description"], "")
         track = detail.data["data"]["tracks"][0]
         self.assertEqual(track["lyrics"], "Первый куплет\nстрока\n\nПрипев")
+        self.assertIsNone(track["minus_url"])
+
+    def test_song_minus_file_on_public_endpoints(self):
+        artist = Artist.objects.create(name="Мот")
+        album = Album.objects.create(title="Лучшие хиты", artist=artist)
+        create = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Капкан",
+                "audio_file": make_audio("vocal.mp3"),
+                "minus_file": make_audio("minus.mp3"),
+                "duration_seconds": 210,
+                "album_assignments": json.dumps(
+                    [{"album_id": album.id, "track_number": 1}]
+                ),
+            },
+            format="multipart",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(create.data["data"]["minus_url"])
+        self.assertIn("/media/songs/minus/", create.data["data"]["minus_url"])
+
+        guest = self.client_class()
+        detail = guest.get(f"/api/v1/albums/{album.id}/")
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        track = detail.data["data"]["tracks"][0]
+        self.assertTrue(track["minus_url"])
+        self.assertIn("/media/songs/minus/", track["minus_url"])
+
+        listing = guest.get("/api/v1/tracks/")
+        self.assertEqual(listing.status_code, status.HTTP_200_OK)
+        self.assertTrue(listing.data["data"][0]["minus_url"])
+
+        search = guest.get("/api/v1/search/", {"query": "Капкан"})
+        self.assertEqual(search.status_code, status.HTTP_200_OK)
+        self.assertTrue(search.data["data"]["songs"][0]["minus_url"])
+
+        bad_minus = self.client.post(
+            "/api/v1/admin/songs/",
+            {
+                "title": "Плохой минус",
+                "audio_file": make_audio("ok.mp3"),
+                "minus_file": make_audio("minus.txt"),
+                "duration_seconds": 10,
+            },
+            format="multipart",
+        )
+        self.assertEqual(bad_minus.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("minus_file", bad_minus.data["error"]["details"])
 
     def test_song_admin_form_hides_duration_unless_needed(self):
         valid = SongAdminForm(
@@ -723,6 +773,8 @@ class PublicTrackListTests(APITestCase):
         self.assertLessEqual(len(titles), 20)
         first = response.data["data"][0]
         self.assertIn("cover_url", first)
+        self.assertIn("minus_url", first)
+        self.assertIsNone(first["minus_url"])
         self.assertIn("album_cover_url", first)
         self.assertEqual(first["artist_name"], "Мот")
         self.assertEqual(first["album_title"], "Хиты")

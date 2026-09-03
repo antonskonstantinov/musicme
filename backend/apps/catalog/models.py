@@ -58,6 +58,13 @@ class Song(models.Model):
     )
     cover = models.ImageField(upload_to="songs/covers/", null=True, blank=True)
     lyrics = models.TextField("Текст песни", blank=True, default="")
+    minus_file = models.FileField(
+        "Минус",
+        upload_to="songs/minus/",
+        null=True,
+        blank=True,
+        help_text="Необязательно. Минусовка трека. Если загружена, на сайте появится кнопка «Минус».",
+    )
     genres = models.ManyToManyField(Genre, through="SongGenre", blank=True)
     moods = models.ManyToManyField(Mood, through="SongMood", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

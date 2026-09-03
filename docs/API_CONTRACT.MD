@@ -253,6 +253,7 @@ GET /api/v1/tracks/?album_id=10&genre_id=1
       "duration_seconds": 210,
       "lyrics": "",
       "audio_url": "/media/songs/audio/song_100.mp3",
+      "minus_url": "/media/songs/minus/song_100_minus.mp3",
       "cover_url": "/media/songs/covers/song_100.jpg",
       "album_id": 10,
       "album_title": "Лучшие хиты",
@@ -281,6 +282,8 @@ GET /api/v1/tracks/?album_id=10&genre_id=1
 Если выбран альбом и жанр — в альбоме остаются только треки этого жанра.
 
 `cover_url` — обложка песни (может быть null). `album_cover_url` — обложка альбома (фронтенд подставляет её, если у трека нет своей).
+
+`minus_url` — минусовка (может быть null). Если не null, на сайте показывается кнопка «Минус».
 
 2.5. Глобальный поиск
 GET /api/v1/search/
@@ -322,6 +325,7 @@ json
         "duration_seconds": 210,
         "lyrics": "Первый куплет\n\nПрипев",
         "audio_url": "/media/audio/song_100.mp3",
+        "minus_url": null,
         "cover_url": null,
         "album_id": 10,
         "album_title": "Лучшие хиты",
@@ -383,6 +387,7 @@ json
         "duration_seconds": 210,
         "lyrics": "Первый куплет\n\nПрипев",
         "audio_url": "/media/audio/song_100.mp3",
+        "minus_url": "/media/songs/minus/song_100_minus.mp3",
         "cover_url": "/media/covers/song_100.jpg",
         "genres": [
           { "id": 1, "name": "Hip-Hop" }
@@ -398,6 +403,7 @@ json
         "duration_seconds": 185,
         "lyrics": "",
         "audio_url": "/media/audio/song_101.mp3",
+        "minus_url": null,
         "cover_url": null,
         "genres": [
           { "id": 1, "name": "Hip-Hop" },
@@ -419,11 +425,14 @@ json
 
 lyrics — текст песни (может быть пустой строкой)
 
+minus_url — URL минусовки или null, если файл не загружен
+
 description — краткое описание альбома (может быть пустой строкой, до 500 символов)
 
 audio_url и cover_url — относительные пути FileField/ImageField (фронтенд добавляет базовый URL). Фактические пути:
 
 - аудио: `/media/songs/audio/{filename}`
+- минус: `/media/songs/minus/{filename}`
 - обложка песни: `/media/songs/covers/{filename}`
 - обложка альбома: `/media/albums/covers/{filename}`
 
@@ -595,6 +604,7 @@ json
   "title": "Новая Песня",
   "audio_file": "<файл аудио>",
   "lyrics": "Текст песни (опционально)",
+  "minus_file": "<файл минусовки (опционально)>",
   "cover": "<файл изображения (опционально)>",
   "genre_ids": [1, 2],
   "mood_ids": [2, 3],
@@ -612,6 +622,7 @@ json
     "duration_seconds": 215,
     "lyrics": "Текст песни (опционально)",
     "audio_url": "/media/audio/song_102.mp3",
+    "minus_url": null,
     "cover_url": null,
     "genres": [
       { "id": 1, "name": "Hip-Hop" },
@@ -637,6 +648,8 @@ audio_file — обязательное (mp3, wav, flac, ogg; макс. 20 MB)
 duration_seconds — не передавать при создании: берётся из аудиофайла. Обязательно (>= 0) только если длительность из файла прочитать не удалось
 
 lyrics — опциональное (текст песни, до 50 000 символов)
+
+minus_file — опциональное (mp3, wav, flac, ogg; макс. 20 MB). Если загружено, в ответах будет `minus_url`
 
 cover — опциональное (jpg, png, webp; макс. 5 MB). Если не передано, а в mp3 есть встроенная картинка (ID3 APIC) — обложка берётся из файла
 

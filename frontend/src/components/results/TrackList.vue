@@ -39,6 +39,10 @@ function hasLyrics(track) {
   return Boolean(String(track?.lyrics || "").trim());
 }
 
+function hasMinus(track) {
+  return Boolean(track?.minus_url);
+}
+
 function coverUrl(track) {
   return track?.cover_url || track?.album_cover_url || props.album?.cover_url || "";
 }
@@ -57,6 +61,18 @@ function playTrack(track) {
 
 function showLyrics(track) {
   player.openLyrics(track);
+}
+
+function playMinus(track) {
+  player.playMinus(track, props.tracks);
+}
+
+function isPlayingMinus(track) {
+  return (
+    player.isMinus &&
+    player.currentTrack?.id === track.id &&
+    (player.currentTrack?.album_id || null) === (track.album_id || null)
+  );
 }
 </script>
 
@@ -155,6 +171,19 @@ function showLyrics(track) {
           @click.stop="showLyrics(track)"
         >
           Текст
+        </button>
+        <button
+          v-if="hasMinus(track)"
+          type="button"
+          class="shrink-0 rounded-full border px-3 py-1 text-sm"
+          :class="
+            isPlayingMinus(track)
+              ? 'border-white text-white'
+              : 'border-gray-600 text-gray-200 hover:border-gray-400 hover:text-white'
+          "
+          @click.stop="playMinus(track)"
+        >
+          Минус
         </button>
         <button
           type="button"

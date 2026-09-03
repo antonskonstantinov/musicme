@@ -44,6 +44,7 @@ erDiagram
         varchar audio_url "NOT NULL"
         int duration_seconds "NOT NULL DEFAULT 0"
         text lyrics "NULL / blank"
+        varchar minus_url "NULL"
         varchar cover_url "NULL"
         datetime created_at "auto"
         datetime updated_at "auto"
@@ -161,6 +162,7 @@ audio_file	FileField	NOT NULL	Аудиофайл (mp3/wav/flac/ogg; `upload_to=s
 duration_seconds	IntegerField	NOT NULL, DEFAULT 0	Длительность в секундах (из файла при загрузке; вручную — только если не удалось определить)
 cover	ImageField	NULL, BLANK	Обложка песни (`upload_to=songs/covers/`; из ID3 APIC при загрузке mp3 либо файл из админки; fallback на фронте — обложка альбома)
 lyrics	TextField	BLANK, DEFAULT ''	Текст песни (необязательно, показывается на сайте)
+minus_file	FileField	NULL, BLANK	Минусовка (mp3/wav/flac/ogg; `upload_to=songs/minus/`, URL `/media/songs/minus/…`). Если загружена — на сайте кнопка «Минус»
 genres	M2M(Genre)	BLANK	Жанры песни
 moods	M2M(Mood)	BLANK	Настроения песни
 created_at	DateTimeField	auto_now_add	Дата создания
