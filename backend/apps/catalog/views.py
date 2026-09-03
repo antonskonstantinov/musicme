@@ -13,6 +13,7 @@ from .serializers import (
     AlbumDetailSerializer,
     AlbumListSerializer,
     ArtistSerializer,
+    CatalogTrackSerializer,
     GenreSerializer,
     MoodSerializer,
     SearchAlbumSerializer,
@@ -136,6 +137,35 @@ class AlbumListView(ListAPIView):
         return qs.annotate(tracks_count=Count("albumsong", distinct=True)).order_by(
             "id"
         )
+
+
+class TrackListView(ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CatalogTrackSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        params = self.request.query_params
+        artist_id = parse_optional_int(params, "artist_id")
+        album_id = parse_optional_int(params, "album_id")
+        genre_id = parse_optional_int(params, "genre_id")
+        mood_id = parse_optional_int(params, "mood_id")
+
+        qs = AlbumSong.objects.select_related("album__artist", "song").prefetch_related(
+            "song__genres",
+            "song__moods",
+        )
+
+        if album_id is not None:
+            qs = qs.filter(album_id=album_id)
+        if artist_id is not None:
+            qs = qs.filter(album__artist_id=artist_id)
+        if genre_id is not None:
+            qs = qs.filter(song__genres__id=genre_id)
+        if mood_id is not None:
+            qs = qs.filter(song__moods__id=mood_id)
+
+        return qs.distinct().order_by("album_id", "track_number", "id")
 
 
 class AlbumDetailView(RetrieveAPIView):

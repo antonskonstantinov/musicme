@@ -22,7 +22,10 @@ let pendingSeekSec = null;
 
 const coverUrl = computed(
   () =>
-    player.currentTrack?.cover_url || catalog.currentAlbum?.cover_url || "",
+    player.currentTrack?.cover_url ||
+    player.currentTrack?.album_cover_url ||
+    catalog.currentAlbum?.cover_url ||
+    "",
 );
 
 const artistName = computed(() => {

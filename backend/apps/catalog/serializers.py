@@ -122,8 +122,10 @@ class SearchAlbumSerializer(serializers.ModelSerializer):
 
 class SearchSongSerializer(serializers.ModelSerializer):
     audio_url = serializers.SerializerMethodField()
+    cover_url = serializers.SerializerMethodField()
     album_id = serializers.SerializerMethodField()
     album_title = serializers.SerializerMethodField()
+    album_cover_url = serializers.SerializerMethodField()
     artist_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -134,8 +136,10 @@ class SearchSongSerializer(serializers.ModelSerializer):
             "duration_seconds",
             "lyrics",
             "audio_url",
+            "cover_url",
             "album_id",
             "album_title",
+            "album_cover_url",
             "artist_name",
         )
 
@@ -147,6 +151,9 @@ class SearchSongSerializer(serializers.ModelSerializer):
 
     def get_audio_url(self, obj):
         return media_url(obj.audio_file)
+
+    def get_cover_url(self, obj):
+        return media_url(obj.cover)
 
     def get_album_id(self, obj):
         album_song = self._album_song(obj)
@@ -160,11 +167,61 @@ class SearchSongSerializer(serializers.ModelSerializer):
             return None
         return album_song.album.title
 
+    def get_album_cover_url(self, obj):
+        album_song = self._album_song(obj)
+        if album_song is None:
+            return None
+        return media_url(album_song.album.cover)
+
     def get_artist_name(self, obj):
         album_song = self._album_song(obj)
         if album_song is None:
             return None
         return album_song.album.artist.name
+
+
+class CatalogTrackSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="song.id")
+    title = serializers.CharField(source="song.title")
+    duration_seconds = serializers.IntegerField(source="song.duration_seconds")
+    lyrics = serializers.CharField(source="song.lyrics")
+    audio_url = serializers.SerializerMethodField()
+    cover_url = serializers.SerializerMethodField()
+    album_id = serializers.IntegerField(source="album.id")
+    album_title = serializers.CharField(source="album.title")
+    album_cover_url = serializers.SerializerMethodField()
+    artist_id = serializers.IntegerField(source="album.artist_id")
+    artist_name = serializers.CharField(source="album.artist.name")
+    genres = GenreSerializer(source="song.genres", many=True)
+    moods = MoodSerializer(source="song.moods", many=True)
+
+    class Meta:
+        model = AlbumSong
+        fields = (
+            "id",
+            "title",
+            "track_number",
+            "duration_seconds",
+            "lyrics",
+            "audio_url",
+            "cover_url",
+            "album_id",
+            "album_title",
+            "album_cover_url",
+            "artist_id",
+            "artist_name",
+            "genres",
+            "moods",
+        )
+
+    def get_audio_url(self, obj):
+        return media_url(obj.song.audio_file)
+
+    def get_cover_url(self, obj):
+        return media_url(obj.song.cover)
+
+    def get_album_cover_url(self, obj):
+        return media_url(obj.album.cover)
 
 
 class SongSerializer(serializers.ModelSerializer):

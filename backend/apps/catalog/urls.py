@@ -17,6 +17,7 @@ urlpatterns = [
     path("artists/", views.ArtistListView.as_view(), name="artist-list"),
     path("albums/", views.AlbumListView.as_view(), name="album-list"),
     path("albums/<int:pk>/", views.AlbumDetailView.as_view(), name="album-detail"),
+    path("tracks/", views.TrackListView.as_view(), name="track-list"),
     path("search/", views.SearchView.as_view(), name="search"),
     path(
         "admin/albums/<int:album_id>/tracks/",

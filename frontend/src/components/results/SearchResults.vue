@@ -113,13 +113,22 @@ function playSong(song) {
           <li v-for="song in results.songs" :key="song.id">
             <button
               type="button"
-              class="w-full rounded-lg px-3 py-2 text-left hover:bg-gray-900"
+              class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-900"
               @click="playSong(song)"
             >
-              <p class="truncate font-medium text-white">{{ song.title }}</p>
-              <p class="truncate text-sm text-gray-400">
-                {{ song.artist_name }} — {{ song.album_title }}
-              </p>
+              <img
+                v-if="song.cover_url || song.album_cover_url"
+                :src="song.cover_url || song.album_cover_url"
+                :alt="song.title"
+                class="h-12 w-12 shrink-0 rounded object-cover"
+              />
+              <div v-else class="h-12 w-12 shrink-0 rounded bg-gray-800" />
+              <div class="min-w-0">
+                <p class="truncate font-medium text-white">{{ song.title }}</p>
+                <p class="truncate text-sm text-gray-400">
+                  {{ song.artist_name }} — {{ song.album_title }}
+                </p>
+              </div>
             </button>
           </li>
         </ul>

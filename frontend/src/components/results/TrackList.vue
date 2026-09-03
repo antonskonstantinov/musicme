@@ -4,25 +4,28 @@ import { computed } from "vue";
 import { usePlayerStore } from "../../stores/player.js";
 
 const props = defineProps({
+  tracks: {
+    type: Array,
+    default: () => [],
+  },
   album: {
     type: Object,
-    required: true,
+    default: null,
   },
-  showBack: {
+  showNumbers: {
     type: Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(["back"]);
 const player = usePlayerStore();
 
 const artistName = computed(
-  () => props.album.artist?.name || props.album.artist_name || "",
+  () => props.album?.artist?.name || props.album?.artist_name || "",
 );
 
 const albumDescription = computed(() =>
-  String(props.album.description || "").trim(),
+  String(props.album?.description || "").trim(),
 );
 
 function formatDuration(seconds) {
@@ -36,8 +39,20 @@ function hasLyrics(track) {
   return Boolean(String(track?.lyrics || "").trim());
 }
 
+function coverUrl(track) {
+  return track?.cover_url || track?.album_cover_url || props.album?.cover_url || "";
+}
+
+function trackSubtitle(track) {
+  const parts = [
+    track.artist_name,
+    track.album_title,
+  ].filter(Boolean);
+  return parts.join(" — ");
+}
+
 function playTrack(track) {
-  player.playTrack(track, props.album.tracks ?? []);
+  player.playTrack(track, props.tracks);
 }
 
 function showLyrics(track) {
@@ -47,16 +62,10 @@ function showLyrics(track) {
 
 <template>
   <div>
-    <button
-      v-if="showBack"
-      type="button"
-      class="mb-4 text-sm text-gray-300 hover:text-white"
-      @click="emit('back')"
+    <div
+      v-if="album"
+      class="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6"
     >
-      Назад
-    </button>
-
-    <div class="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
       <img
         v-if="album.cover_url"
         :src="album.cover_url"
@@ -93,16 +102,32 @@ function showLyrics(track) {
 
     <ul class="divide-y divide-gray-800">
       <li
-        v-for="track in album.tracks ?? []"
-        :key="track.id"
+        v-for="track in tracks"
+        :key="`${track.album_id || 'song'}-${track.id}`"
         class="flex cursor-pointer items-center gap-3 py-3 hover:bg-gray-900"
         @click="playTrack(track)"
       >
-        <span class="w-8 shrink-0 text-center text-sm text-gray-500">
+        <span
+          v-if="showNumbers"
+          class="w-8 shrink-0 text-center text-sm text-gray-500"
+        >
           {{ track.track_number }}
         </span>
+        <img
+          v-if="coverUrl(track)"
+          :src="coverUrl(track)"
+          :alt="track.title"
+          class="h-12 w-12 shrink-0 rounded object-cover"
+        />
+        <div v-else class="h-12 w-12 shrink-0 rounded bg-gray-800" />
         <div class="min-w-0 flex-1">
           <p class="truncate font-medium text-white">{{ track.title }}</p>
+          <p
+            v-if="trackSubtitle(track)"
+            class="truncate text-sm text-gray-400"
+          >
+            {{ trackSubtitle(track) }}
+          </p>
           <div class="mt-1 flex flex-wrap gap-1">
             <span
               v-for="genre in track.genres ?? []"

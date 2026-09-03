@@ -1,95 +1,69 @@
 <script setup>
-import { computed, watch } from "vue";
+import { computed, onBeforeUnmount, watch } from "vue";
 
 import { useCatalogStore } from "../../stores/catalog.js";
 import { useFiltersStore } from "../../stores/filters.js";
-import { usePlayerStore } from "../../stores/player.js";
 import Spinner from "../ui/Spinner.vue";
-import AlbumCard from "./AlbumCard.vue";
 import SearchResults from "./SearchResults.vue";
 import TrackList from "./TrackList.vue";
 
 const catalog = useCatalogStore();
 const filters = useFiltersStore();
-const player = usePlayerStore();
+
+let debounceTimer = null;
+let requestId = 0;
 
 const viewMode = computed(() => {
   if (catalog.searchResults !== null && !filters.selectedAlbum) {
     return "search";
   }
 
-  if (filters.selectedAlbum || filters.isDefaultState) {
-    if (filters.isDefaultState && !catalog.albums.length && !catalog.currentAlbum) {
-      return "empty-db";
-    }
-    return "tracks";
+  if (catalog.isTracksLoading && !catalog.tracks.length) {
+    return "tracks-loading";
   }
 
-  if (!catalog.albums.length) {
-    return "empty-filters";
+  if (!catalog.tracks.length) {
+    return filters.hasActiveFilters ? "empty-filters" : "empty-db";
   }
 
-  return "grid";
+  return "tracks";
 });
 
-const trackAlbum = computed(() => {
-  if (filters.selectedAlbum) {
-    if (catalog.currentAlbum?.id === filters.selectedAlbum.id) {
-      return catalog.currentAlbum;
-    }
+const headerAlbum = computed(() => {
+  if (!filters.selectedAlbum) {
     return null;
   }
-  if (filters.isDefaultState) {
+  if (catalog.currentAlbum?.id === filters.selectedAlbum.id) {
     return catalog.currentAlbum;
   }
-  return null;
+  return filters.selectedAlbum;
 });
 
-function firstAlbum() {
-  if (!catalog.albums.length) {
-    return null;
-  }
-  return catalog.albums.reduce((min, album) =>
-    album.id < min.id ? album : min,
-  );
-}
-
-function setFirstTrackPaused() {
-  const tracks = catalog.currentAlbum?.tracks ?? [];
-  if (!tracks.length) {
-    return;
-  }
-  player.currentTrack = tracks[0];
-  player.queue = [...tracks];
-  player.currentIndex = 0;
-  player.isPlaying = false;
-  player.currentTime = 0;
-}
-
-async function showFirstAlbum() {
-  const album = firstAlbum();
-  if (!album) {
-    return;
-  }
-  if (catalog.currentAlbum?.id !== album.id) {
-    await catalog.fetchAlbumDetail(album.id);
-  }
-  setFirstTrackPaused();
-}
-
-function onBack() {
-  filters.clearAlbum();
-}
-
 watch(
-  () => [filters.isDefaultState, catalog.albums],
-  async ([isDefault]) => {
-    if (!isDefault) {
-      return;
-    }
-    await showFirstAlbum();
+  () => [
+    filters.selectedGenre?.id ?? null,
+    filters.selectedMood?.id ?? null,
+    filters.selectedArtist?.id ?? null,
+    filters.selectedAlbum?.id ?? null,
+  ],
+  () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const id = ++requestId;
+      try {
+        await catalog.fetchTracks();
+      } finally {
+        if (id !== requestId) {
+          return;
+        }
+      }
+    }, 300);
   },
 );
+
+onBeforeUnmount(() => {
+  clearTimeout(debounceTimer);
+});
 </script>
 
 <template>
@@ -106,30 +80,18 @@ watch(
       </p>
 
       <Spinner
-        v-else-if="viewMode === 'tracks' && !trackAlbum"
+        v-else-if="viewMode === 'tracks-loading'"
         key="tracks-loading"
         label="Загрузка"
       />
 
       <TrackList
-        v-else-if="viewMode === 'tracks' && trackAlbum"
-        :key="`tracks-${trackAlbum.id}`"
-        :album="trackAlbum"
-        :show-back="Boolean(filters.selectedAlbum)"
-        @back="onBack"
+        v-else
+        key="tracks"
+        :tracks="catalog.tracks"
+        :album="headerAlbum"
+        :show-numbers="Boolean(filters.selectedAlbum)"
       />
-
-      <div
-        v-else-if="viewMode === 'grid'"
-        key="grid"
-        class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
-      >
-        <AlbumCard
-          v-for="album in catalog.albums"
-          :key="album.id"
-          :album="album"
-        />
-      </div>
     </Transition>
   </section>
 </template>

@@ -672,3 +672,77 @@ class MediaRangeTests(SimpleTestCase):
     def test_missing_file(self):
         response = self.client.get("/media/songs/audio/missing.mp3")
         self.assertEqual(response.status_code, 404)
+
+
+@override_settings(MEDIA_ROOT="/tmp/muzzzic-test-media-tracks")
+class PublicTrackListTests(APITestCase):
+    def setUp(self):
+        self.hip = Genre.objects.create(name="Hip-Hop")
+        self.rock = Genre.objects.create(name="Rock")
+        self.sad = Mood.objects.create(name="Грустное")
+        self.energy = Mood.objects.create(name="Энергичное")
+        self.artist = Artist.objects.create(name="Мот")
+        self.other = Artist.objects.create(name="Баста")
+        self.album = Album.objects.create(title="Хиты", artist=self.artist, year=2023)
+        self.album2 = Album.objects.create(title="Другое", artist=self.other, year=2020)
+
+        self.song_hip = Song.objects.create(
+            title="Капкан",
+            audio_file=make_audio("a.mp3"),
+            duration_seconds=210,
+        )
+        self.song_hip.genres.add(self.hip)
+        self.song_hip.moods.add(self.energy)
+
+        self.song_rock = Song.objects.create(
+            title="Рок",
+            audio_file=make_audio("b.mp3"),
+            duration_seconds=180,
+        )
+        self.song_rock.genres.add(self.rock)
+        self.song_rock.moods.add(self.sad)
+
+        self.song_mix = Song.objects.create(
+            title="Микс",
+            audio_file=make_audio("c.mp3"),
+            duration_seconds=100,
+        )
+        self.song_mix.genres.add(self.hip)
+        self.song_mix.moods.add(self.sad)
+
+        AlbumSong.objects.create(album=self.album, song=self.song_hip, track_number=1)
+        AlbumSong.objects.create(album=self.album, song=self.song_rock, track_number=2)
+        AlbumSong.objects.create(album=self.album2, song=self.song_mix, track_number=1)
+
+    def test_unfiltered_list_is_ordered_and_capped(self):
+        response = self.client.get("/api/v1/tracks/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [row["title"] for row in response.data["data"]]
+        self.assertEqual(titles, ["Капкан", "Рок", "Микс"])
+        self.assertEqual(response.data["meta"]["page_size"], 20)
+        self.assertLessEqual(len(titles), 20)
+        first = response.data["data"][0]
+        self.assertIn("cover_url", first)
+        self.assertIn("album_cover_url", first)
+        self.assertEqual(first["artist_name"], "Мот")
+        self.assertEqual(first["album_title"], "Хиты")
+
+    def test_genre_and_album_filter_tracks_not_whole_album(self):
+        response = self.client.get(
+            "/api/v1/tracks/",
+            {"genre_id": self.hip.id, "album_id": self.album.id},
+        )
+        titles = [row["title"] for row in response.data["data"]]
+        self.assertEqual(titles, ["Капкан"])
+
+    def test_genre_and_mood_and_artist(self):
+        response = self.client.get(
+            "/api/v1/tracks/",
+            {
+                "genre_id": self.hip.id,
+                "mood_id": self.sad.id,
+                "artist_id": self.other.id,
+            },
+        )
+        titles = [row["title"] for row in response.data["data"]]
+        self.assertEqual(titles, ["Микс"])

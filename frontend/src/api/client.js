@@ -19,6 +19,9 @@ async function retryFailedRequest(config) {
   if (url.includes("/search/")) {
     return catalog.search(params.query);
   }
+  if (url.includes("/tracks/")) {
+    return catalog.fetchTracks();
+  }
   if (/\/albums\/\d+/.test(url)) {
     const albumId = Number(url.match(/\/albums\/(\d+)/)[1]);
     return catalog.fetchAlbumDetail(albumId);

@@ -219,6 +219,69 @@ search — ищет по Album.title и Artist.name (case-insensitive, соде�
 
 Если cover_url = null — фронтенд показывает placeholder
 
+2.4.1. Список треков
+GET /api/v1/tracks/
+
+Query Parameters:
+
+Параметр	Тип	Обязательный	Описание
+genre_id	int	Нет	Только треки с этим жанром
+mood_id	int	Нет	Только треки с этим настроением
+artist_id	int	Нет	Только треки альбомов этого исполнителя
+album_id	int	Нет	Только треки этого альбома
+page	int	Нет	Страница (по умолчанию 1)
+page_size	int	Нет	Размер страницы (по умолчанию 20, макс. 100)
+
+Примеры:
+
+```
+GET /api/v1/tracks/
+GET /api/v1/tracks/?genre_id=1
+GET /api/v1/tracks/?genre_id=1&mood_id=2
+GET /api/v1/tracks/?album_id=10&genre_id=1
+```
+
+Ответ 200:
+
+```json
+{
+  "data": [
+    {
+      "id": 100,
+      "title": "Капкан",
+      "track_number": 1,
+      "duration_seconds": 210,
+      "lyrics": "",
+      "audio_url": "/media/songs/audio/song_100.mp3",
+      "cover_url": "/media/songs/covers/song_100.jpg",
+      "album_id": 10,
+      "album_title": "Лучшие хиты",
+      "album_cover_url": "/media/albums/covers/album_10.jpg",
+      "artist_id": 1,
+      "artist_name": "Мот",
+      "genres": [{ "id": 1, "name": "Hip-Hop" }],
+      "moods": [{ "id": 2, "name": "Энергичное" }]
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+Логика:
+
+Каждый параметр сужает **сами треки** (AND), а не «альбомы, где есть хоть один подходящий трек».
+
+Без параметров — все треки каталога по порядку: `album_id`, затем `track_number`. На первой странице не больше 20.
+
+Если выбран альбом и жанр — в альбоме остаются только треки этого жанра.
+
+`cover_url` — обложка песни (может быть null). `album_cover_url` — обложка альбома (фронтенд подставляет её, если у трека нет своей).
+
 2.5. Глобальный поиск
 GET /api/v1/search/
 
@@ -259,8 +322,10 @@ json
         "duration_seconds": 210,
         "lyrics": "Первый куплет\n\nПрипев",
         "audio_url": "/media/audio/song_100.mp3",
+        "cover_url": null,
         "album_id": 10,
         "album_title": "Лучшие хиты",
+        "album_cover_url": "/media/covers/album_10.jpg",
         "artist_name": "Мот"
       }
     ]
