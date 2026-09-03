@@ -55,26 +55,27 @@ onBeforeUnmount(() => {
     title="Альбом"
     :loading="loading"
     empty-text="Нет альбомов с такими параметрами"
+    variant="tile"
     @select="onSelect"
     @clear="filters.clearAlbum"
   >
     <template #default="{ item }">
-      <div class="flex w-28 flex-col items-center gap-2">
+      <div class="flex w-14 flex-col items-center gap-1 sm:w-20">
         <img
           v-if="item.cover_url"
           :src="item.cover_url"
           :alt="item.title"
           loading="lazy"
-          class="h-24 w-24 rounded-lg object-cover"
+          class="h-14 w-14 rounded-md object-cover sm:h-20 sm:w-20"
         />
         <div
           v-else
-          class="h-24 w-24 rounded-lg bg-gray-700"
+          class="h-14 w-14 rounded-md bg-gray-700 sm:h-20 sm:w-20"
         />
-        <span class="w-full truncate text-center text-sm font-medium">
+        <span class="w-full truncate text-center text-[11px] font-medium leading-tight sm:text-sm">
           {{ item.title }}
         </span>
-        <span class="text-xs text-gray-400">{{ item.year }}</span>
+        <span class="hidden text-[11px] text-gray-400 sm:block">{{ item.year }}</span>
       </div>
     </template>
   </FilterCarousel>

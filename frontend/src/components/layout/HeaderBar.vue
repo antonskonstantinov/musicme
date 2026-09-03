@@ -61,11 +61,11 @@ onBeforeUnmount(() => {
 
 <template>
   <header
-    class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800 bg-gray-900 px-4 py-3"
+    class="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-gray-800 bg-gray-900 px-4 py-2 sm:py-3"
   >
-    <div class="min-w-0 w-full sm:w-auto sm:max-w-[14rem] md:max-w-xs">
-      <div class="text-2xl font-bold tracking-tight text-white">MusicMe</div>
-      <p class="mt-0.5 text-xs leading-snug text-gray-400">
+    <div class="min-w-0 w-auto max-w-[11rem] sm:max-w-[14rem] md:max-w-xs">
+      <div class="text-xl font-bold tracking-tight text-white sm:text-2xl">MusicMe</div>
+      <p class="mt-0.5 hidden text-xs leading-snug text-gray-400 sm:block">
         Личная библиотека музыкальных произведений. Проект Антона Константинова,
         созданный в демонстрационных целях. Контакт в telegram - @permanentov
       </p>

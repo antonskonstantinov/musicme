@@ -18,7 +18,7 @@ function clearFilter(type) {
 <template>
   <section
     v-if="filters.hasActiveFilters"
-    class="flex flex-wrap items-center gap-2 border-b border-gray-800 px-4 py-3"
+    class="flex flex-wrap items-center gap-1.5 border-b border-gray-800 px-4 py-1.5 sm:py-2.5"
   >
     <span
       v-for="chip in filters.activeFilters"

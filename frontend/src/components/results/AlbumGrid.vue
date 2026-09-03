@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-label="Результаты" class="flex-1 px-4 py-6 pb-32">
+  <section aria-label="Результаты" class="flex-1 px-4 pb-32 pt-3 sm:pt-6">
     <Transition name="fade-mode" mode="out-in">
       <SearchResults v-if="viewMode === 'search'" key="search" />
 

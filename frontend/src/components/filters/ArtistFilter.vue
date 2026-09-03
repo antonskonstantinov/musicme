@@ -65,19 +65,12 @@ onBeforeUnmount(() => {
     @clear="filters.clearArtist"
   >
     <template #default="{ item }">
-      <div class="flex w-28 flex-col items-center gap-2">
-        <div
-          class="flex h-14 w-14 items-center justify-center rounded-full bg-gray-700 text-lg font-semibold text-white"
-        >
-          {{ item.name?.charAt(0) }}
-        </div>
-        <span class="w-full truncate text-center text-sm font-medium">
-          {{ item.name }}
-        </span>
-        <span class="text-xs text-gray-400">
+      <span class="flex max-w-[10rem] items-baseline gap-1.5">
+        <span class="truncate font-medium">{{ item.name }}</span>
+        <span class="shrink-0 text-[11px] text-gray-400">
           {{ formatAlbumsCount(item.albums_count) }}
         </span>
-      </div>
+      </span>
     </template>
   </FilterCarousel>
 </template>
